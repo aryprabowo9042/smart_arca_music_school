@@ -1,88 +1,55 @@
 <?php
 session_start();
-include '../includes/koneksi.php';
 
-// 1. Cek Keamanan: Apakah user login sebagai admin?
-if ($_SESSION['status'] != "login" || $_SESSION['role'] != "admin") {
-    header("Location: ../login.php");
+// 1. Proteksi Halaman: Cek apakah user sudah login dan benar seorang admin
+if (!isset($_SESSION['status']) || $_SESSION['status'] != "login" || $_SESSION['role'] != "admin") {
+    header("Location: /login.php?pesan=belum_login");
     exit();
 }
 
-// 2. Hitung Statistik Data untuk Dashboard
-// Menghitung jumlah Guru
-$query_guru = mysqli_query($koneksi, "SELECT * FROM users WHERE role='guru'");
-$total_guru = mysqli_num_rows($query_guru);
+// 2. Hubungkan ke database (naik satu folder ke api/koneksi.php)
+include "../koneksi.php";
 
-// Menghitung jumlah Murid
-$query_murid = mysqli_query($koneksi, "SELECT * FROM users WHERE role='murid'");
-$total_murid = mysqli_num_rows($query_murid);
-
-// Menghitung jumlah Modul Belajar
-$query_modul = mysqli_query($koneksi, "SELECT * FROM modul");
-$total_modul = mysqli_num_rows($query_modul);
-
-// (Tambahan) Menghitung Permintaan Tarik Dana yang PENDING
-// Ini agar Admin langsung tahu jika ada guru yang minta gaji
-$query_wd = mysqli_query($koneksi, "SELECT * FROM penarikan WHERE status='pending'");
-$total_wd_pending = mysqli_num_rows($query_wd);
+// Contoh mengambil data jumlah user (opsional)
+$query_user = mysqli_query($conn, "SELECT COUNT(*) as total FROM users");
+$row_user = mysqli_fetch_assoc($query_user);
 ?>
 
 <!DOCTYPE html>
 <html lang="id">
 <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Dashboard Admin - Smart Arca</title>
-    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="/css/landing.css">
 </head>
-<body>
+<body style="background: #f4f7f6; font-family: sans-serif;">
 
-    <div class="sidebar">
-        <h2>Smart Arca Admin</h2>
-        
-        <a href="index.php" style="background-color: #495057; color: white;">Dashboard</a>
-        
-        <a href="data_guru.php">Data Guru</a>
-        <a href="data_murid.php">Data Murid</a>
-        
-        <a href="jadwal.php">Jadwal Les</a>
-        <a href="absensi.php">Data Absensi</a>
-        
-        <a href="pembayaran.php">Keuangan (SPP)</a>
-        <a href="kelola_gaji.php">Kelola Gaji Guru</a>
-        
-        <a href="modul.php">Modul Belajar</a>
-        
-        <a href="../logout.php">Logout</a>
-    </div>
+    <div style="display: flex;">
+        <div style="width: 250px; height: 100vh; background: #2c3e50; color: white; padding: 20px;">
+            <h3>Smart Arca Admin</h3>
+            <hr>
+            <p>Selamat Datang, <br><strong><?php echo $_SESSION['username']; ?></strong></p>
+            <ul style="list-style: none; padding: 0; margin-top: 30px;">
+                <li style="margin-bottom: 15px;"><a href="/admin/index.php" style="color: white; text-decoration: none;">🏠 Dashboard</a></li>
+                <li style="margin-bottom: 15px;"><a href="#" style="color: white; text-decoration: none;">👥 Data Siswa</a></li>
+                <li style="margin-bottom: 15px;"><a href="#" style="color: white; text-decoration: none;">🎸 Data Guru</a></li>
+                <li style="margin-bottom: 15px;"><a href="/logout.php" style="color: #e74c3c; text-decoration: none; font-weight: bold;">🚪 Logout</a></li>
+            </ul>
+        </div>
 
-    <div class="content">
-        <h1>Dashboard</h1>
-        <p>Selamat datang kembali, <b><?php echo $_SESSION['nama_lengkap']; ?></b>.</p>
-        
-        <div style="display: flex; gap: 20px; flex-wrap: wrap;">
-            
-            <div class="stat-box" style="background-color: #007bff;">
-                <h3><?php echo $total_guru; ?></h3>
-                <p>Total Guru</p>
+        <div style="flex: 1; padding: 30px;">
+            <h1>Dashboard Utama</h1>
+            <div style="display: flex; gap: 20px; margin-top: 20px;">
+                <div style="background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); flex: 1;">
+                    <h3>Total Pengguna</h3>
+                    <p style="font-size: 2rem; color: #e67e22;"><?php echo $row_user['total']; ?></p>
+                </div>
+                <div style="background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); flex: 1;">
+                    <h3>Status Sistem</h3>
+                    <p style="color: green; font-weight: bold;">Online (Vercel + TiDB)</p>
+                </div>
             </div>
-
-            <div class="stat-box" style="background-color: #17a2b8;">
-                <h3><?php echo $total_murid; ?></h3>
-                <p>Total Siswa</p>
-            </div>
-
-            <div class="stat-box" style="background-color: #ffc107; color: #333;">
-                <h3><?php echo $total_modul; ?></h3>
-                <p>Modul Belajar</p>
-            </div>
-
-            <?php if($total_wd_pending > 0): ?>
-            <div class="stat-box" style="background-color: #dc3545;">
-                <h3><?php echo $total_wd_pending; ?></h3>
-                <p>Request Tarik Dana</p>
-                <small style="color: #ffd;">Segera Cek Menu Kelola Gaji!</small>
-            </div>
-            <?php endif; ?>
-
         </div>
     </div>
 
