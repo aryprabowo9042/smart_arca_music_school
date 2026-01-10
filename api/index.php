@@ -1,9 +1,9 @@
 <?php
 session_start();
 
-// Cek apakah user sudah login?
+// 1. Cek apakah user sudah login? 
+// Gunakan path / agar tidak tersesat di dalam folder api
 if (isset($_SESSION['status']) && $_SESSION['status'] == "login") {
-    // Gunakan path absolut dengan / agar tidak masuk ke folder api/admin
     if ($_SESSION['role'] == "admin") {
         header("Location: /admin/index.php");
     } else if ($_SESSION['role'] == "guru") {
@@ -21,6 +21,7 @@ if (isset($_SESSION['status']) && $_SESSION['status'] == "login") {
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Smart Arca Music School - Sekolah Musik Weleri</title>
+    
     <link rel="stylesheet" href="/css/landing.css">
     <link rel="icon" href="/images/logo.png" type="image/png">
 </head>
@@ -28,7 +29,7 @@ if (isset($_SESSION['status']) && $_SESSION['status'] == "login") {
 
     <header>
         <div class="container">
-            <a href="#" class="logo">
+            <a href="/" class="logo">
                 <img src="/images/logo.png" alt="Smart Arca Logo">
                 <span>Smart Arca Music</span>
             </a>
@@ -47,8 +48,58 @@ if (isset($_SESSION['status']) && $_SESSION['status'] == "login") {
     <section id="home" class="hero">
         <div class="container">
             <h1>Wujudkan Mimpi Musikmu</h1>
-            <p>Bergabunglah dengan sekolah musik terbaik di Kendal. Belajar dari guru profesional dengan kurikulum standar internasional.</p>
+            <p>Bergabunglah dengan sekolah musik terbaik di Kendal. Belajar dari guru profesional dengan kurikulum standar internasional untuk mengembangkan bakatmu.</p>
             <a href="https://wa.me/6285878741474" class="btn-cta" target="_blank">Daftar Sekarang via WA</a>
+        </div>
+    </section>
+
+    <section id="program" class="section">
+        <div class="container">
+            <h2 class="section-title">Pilihan Kelas Musik</h2>
+            <div class="grid">
+                
+                <div class="card">
+                    <span class="icon">🎹</span>
+                    <h3>Piano & Keyboard</h3>
+                    <p>Pelajari teknik dasar hingga mahir, baik Klasik maupun Pop dengan metode yang menyenangkan.</p>
+                </div>
+
+                <div class="card">
+                    <span class="icon">🎸</span>
+                    <h3>Gitar</h3>
+                    <p>Kuasai chord, melodi, dan berbagai teknik gitar bersama instruktur ahli.</p>
+                </div>
+
+                <div class="card">
+                    <span class="icon">🥁</span>
+                    <h3>Drum</h3>
+                    <p>Bangun ritme dan koordinasi tubuh dengan kurikulum drum modern.</p>
+                </div>
+
+                <div class="card">
+                    <span class="icon">🎤</span>
+                    <h3>Vokal</h3>
+                    <p>Olah vokalmu agar lebih powerfull dengan teknik pernapasan yang benar.</p>
+                </div>
+
+                <div class="card">
+                    <span class="icon">🎼</span>
+                    <h3>Music Theory</h3>
+                    <p>Pahami not balok dan harmoni untuk mendukung kemampuan bermusikmu.</p>
+                </div>
+
+            </div>
+        </div>
+    </section>
+
+    <section id="tentang" class="section" style="background-color: #f9f9f9;">
+        <div class="container" style="text-align: center; max-width: 900px;">
+            <h2 class="section-title">Visi & Misi Smart Arca</h2>
+            <div style="background: white; padding: 20px; border-radius: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); margin-bottom: 30px;">
+                <p style="font-size: 1.3rem; font-weight: 600; color: #555; font-style: italic;">
+                    "Memberi pembelajaran musik dengan kurikulum terpandu untuk meningkatkan kecerdasan dan pengembangan karakter."
+                </p>
+            </div>
         </div>
     </section>
 
@@ -63,7 +114,7 @@ if (isset($_SESSION['status']) && $_SESSION['status'] == "login") {
                 WhatsApp: 0858-7874-1474
             </p>
             <p style="margin-top: 30px; font-size: 0.8rem; color: #666;">
-                &copy; 2024 Smart Arca Music School. All Rights Reserved.
+                &copy; 2026 Smart Arca Music School. All Rights Reserved.
             </p>
         </div>
     </footer>
