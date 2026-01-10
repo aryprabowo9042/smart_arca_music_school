@@ -1,13 +1,16 @@
 {
   "functions": {
-    "api/*.php": {
+    "api/**/*.php": {
       "runtime": "vercel-php@0.7.1"
     }
   },
-  "rewrites": [
-    { "source": "/login.php", "destination": "/api/login.php" },
-    { "source": "/logout.php", "destination": "/api/logout.php" },
-    { "source": "/", "destination": "/api/index.php" },
-    { "source": "/index.php", "destination": "/api/index.php" }
+  "routes": [
+    { "src": "/css/(.*)", "dest": "/css/$1" },
+    { "src": "/images/(.*)", "dest": "/images/$1" },
+    { "src": "/login.php", "dest": "/api/login.php" },
+    { "src": "/admin/(.*)", "dest": "/api/admin/$1" },
+    { "src": "/guru/(.*)", "dest": "/api/guru/$1" },
+    { "src": "/murid/(.*)", "dest": "/api/murid/$1" },
+    { "src": "/(.*)", "dest": "/api/index.php" }
   ]
 }
