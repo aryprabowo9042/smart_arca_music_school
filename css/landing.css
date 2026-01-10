@@ -1,0 +1,267 @@
+/* =========================================
+   1. GLOBAL RESET & TYPOGRAPHY
+   ========================================= */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+html {
+    scroll-behavior: smooth; /* Efek scroll halus saat klik menu */
+}
+
+body {
+    line-height: 1.6;
+    color: #333;
+    background-color: #fdfdfd;
+}
+
+a {
+    text-decoration: none;
+    transition: 0.3s;
+}
+
+ul {
+    list-style: none;
+}
+
+/* =========================================
+   2. NAVBAR & HEADER
+   ========================================= */
+header {
+    background: #1a1a1a; /* Warna gelap elegan */
+    color: #fff;
+    padding: 15px 0;
+    position: sticky; /* Menu tetap di atas saat scroll */
+    top: 0;
+    z-index: 1000;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+}
+
+.container {
+    width: 90%;
+    max-width: 1200px;
+    margin: auto;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+/* --- LOGO AREA --- */
+.logo {
+    display: flex;
+    align-items: center;
+    color: #fff;
+    font-size: 1.2rem;
+    font-weight: 700;
+    letter-spacing: 1px;
+}
+
+.logo img {
+    height: 45px; /* Tinggi logo dibatasi agar menu tidak berantakan */
+    width: auto;
+    margin-right: 12px;
+}
+
+/* --- NAVIGATION MENU --- */
+nav ul {
+    display: flex;
+    align-items: center;
+}
+
+nav ul li {
+    margin-left: 30px;
+}
+
+nav ul li a {
+    color: #ccc;
+    font-size: 1rem;
+    font-weight: 500;
+}
+
+nav ul li a:hover {
+    color: #fff;
+}
+
+/* --- TOMBOL LOGIN SPESIAL --- */
+.btn-login {
+    background: #e67e22; /* Warna Oranye Kontras */
+    color: white !important;
+    padding: 10px 25px;
+    border-radius: 50px; /* Bentuk kapsul */
+    font-weight: bold;
+    box-shadow: 0 4px 6px rgba(230, 126, 34, 0.3);
+}
+
+.btn-login:hover {
+    background: #d35400;
+    transform: translateY(-2px); /* Efek naik sedikit saat di-hover */
+    box-shadow: 0 6px 12px rgba(230, 126, 34, 0.4);
+}
+
+/* =========================================
+   3. HERO SECTION (BANNER UTAMA)
+   ========================================= */
+.hero {
+    /* Background: Gradient gelap di atas gambar agar teks terbaca */
+    /* Ganti URL di bawah ini dengan '../images/hero-bg.jpg' jika sudah ada file lokal */
+    background: linear-gradient(rgba(0,0,0,0.6), rgba(0,0,0,0.6)), url('https://images.unsplash.com/photo-1514320291840-2e0a9bf2a9ae?ixlib=rb-1.2.1&auto=format&fit=crop&w=1350&q=80');
+    background-size: cover;
+    background-position: center;
+    height: 85vh; /* Tinggi hampir selayar penuh */
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    text-align: center;
+    color: white;
+    padding: 0 20px;
+}
+
+.hero h1 {
+    font-size: 3.5rem;
+    margin-bottom: 1rem;
+    text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
+}
+
+.hero p {
+    font-size: 1.3rem;
+    margin-bottom: 2.5rem;
+    max-width: 700px;
+    margin-left: auto;
+    margin-right: auto;
+    opacity: 0.9;
+}
+
+.btn-cta {
+    background: #007bff; /* Biru terang */
+    color: white;
+    padding: 15px 40px;
+    font-size: 1.2rem;
+    border-radius: 5px;
+    font-weight: bold;
+    border: 2px solid #007bff;
+}
+
+.btn-cta:hover {
+    background: transparent;
+    border: 2px solid white;
+    color: white;
+}
+
+/* =========================================
+   4. CONTENT SECTIONS (PROGRAM & ABOUT)
+   ========================================= */
+.section {
+    padding: 5rem 0;
+}
+
+.section-title {
+    text-align: center;
+    margin-bottom: 3.5rem;
+    font-size: 2.2rem;
+    color: #333;
+    position: relative;
+    display: inline-block;
+    width: 100%;
+}
+
+/* Garis kecil di bawah judul */
+.section-title::after {
+    content: '';
+    display: block;
+    width: 60px;
+    height: 4px;
+    background: #e67e22;
+    margin: 10px auto 0;
+    border-radius: 2px;
+}
+
+/* =========================================
+   5. GRID & CARDS (PROGRAM KELAS)
+   ========================================= */
+.grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 30px;
+}
+
+.card {
+    background: #fff;
+    padding: 30px 20px;
+    border-radius: 10px;
+    text-align: center;
+    border: 1px solid #eee;
+    transition: 0.3s;
+    position: relative;
+    overflow: hidden;
+}
+
+.card:hover {
+    transform: translateY(-10px); /* Efek melayang */
+    box-shadow: 0 10px 20px rgba(0,0,0,0.1);
+    border-color: #e67e22;
+}
+
+.card h3 {
+    margin: 15px 0 10px;
+    color: #222;
+    font-size: 1.3rem;
+}
+
+.icon {
+    font-size: 3.5rem;
+    display: block;
+    margin-bottom: 15px;
+    /* Efek animasi kecil pada icon */
+    transition: transform 0.3s;
+}
+
+.card:hover .icon {
+    transform: scale(1.1);
+}
+
+/* =========================================
+   6. FOOTER
+   ========================================= */
+footer {
+    background: #111;
+    color: #888;
+    text-align: center;
+    padding: 3rem 0;
+    border-top: 5px solid #e67e22;
+}
+
+footer p {
+    margin: 5px 0;
+    font-size: 0.9rem;
+}
+
+/* =========================================
+   7. RESPONSIVE MOBILE (LAYAR KECIL)
+   ========================================= */
+@media (max-width: 768px) {
+    .container {
+        flex-direction: column;
+        text-align: center;
+    }
+
+    nav ul {
+        flex-direction: column;
+        margin-top: 20px;
+        padding: 0;
+    }
+
+    nav ul li {
+        margin: 10px 0;
+    }
+
+    .hero h1 {
+        font-size: 2.2rem;
+    }
+    
+    .logo {
+        margin-bottom: 10px;
+    }
+}
