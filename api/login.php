@@ -14,7 +14,8 @@ if (isset($_POST['login'])) {
         $_SESSION['role']     = $data['role'];
         $_SESSION['status']   = "login";
 
-        // ARAHKAN KE FILE BARU (dashboard.php)
+        // PERBAIKAN DI SINI:
+        // Kita paksa semua role masuk ke dashboard.php yang baru
         echo "<script>window.location.href='/api/dashboard.php';</script>";
         
     } else {
@@ -24,14 +25,14 @@ if (isset($_POST['login'])) {
 ?>
 <!DOCTYPE html>
 <html>
-<head><title>Login</title></head>
+<head><title>Login Sistem</title></head>
 <body>
-    <div style="width:300px; margin:100px auto; padding:20px; border:1px solid #ccc; text-align:center;">
-        <h3>LOGIN TES</h3>
+    <div style="width:300px; margin:100px auto; padding:20px; border:1px solid #ccc; text-align:center; font-family:sans-serif;">
+        <h3>LOGIN SISTEM</h3>
         <form method="POST">
             <input type="text" name="username" placeholder="Username" required style="width:90%; padding:10px; margin:5px;"><br>
             <input type="password" name="password" placeholder="Password" required style="width:90%; padding:10px; margin:5px;"><br>
-            <button type="submit" name="login" style="width:100%; padding:10px; cursor:pointer;">MASUK</button>
+            <button type="submit" name="login" style="width:100%; padding:10px; background:#0070f3; color:white; border:none; cursor:pointer;">MASUK</button>
         </form>
     </div>
 </body>
