@@ -34,7 +34,7 @@ $query_users = mysqli_query($conn, "SELECT * FROM users");
     <p>Status Sistem: <span style="color: green; font-weight: bold;">● Terhubung ke TiDB Cloud</span></p>
 
     <h3>Daftar Pengguna Terdaftar</h3>
-    <a href="../tambah_murid.php" style="display: inline-block; padding: 10px 15px; background: #28a745; color: white; text-decoration: none; border-radius: 5px; margin-bottom: 15px;">+ Tambah Murid Baru</a>
+    <a href="../api/tambah_murid.php" style="display: inline-block; padding: 10px 15px; background: #28a745; color: white; text-decoration: none; border-radius: 5px; margin-bottom: 15px;">+ Tambah Murid Baru</a>
     <table>
         <thead>
             <tr>
