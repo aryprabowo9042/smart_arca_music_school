@@ -14,14 +14,9 @@ if (isset($_POST['login'])) {
         $_SESSION['role']     = $data['role'];
         $_SESSION['status']   = "login";
 
-        // GUNAKAN ALAMAT ASLI (Wajib pakai /api/)
-        if ($data['role'] == "admin") {
-            echo "<script>window.location.href='/api/admin/index.php';</script>";
-        } else if ($data['role'] == "guru") {
-            echo "<script>window.location.href='/api/guru/index.php';</script>";
-        } else if ($data['role'] == "murid") {
-            echo "<script>window.location.href='/api/murid/index.php';</script>";
-        }
+        // ARAHKAN KE FILE BARU (dashboard.php)
+        echo "<script>window.location.href='/api/dashboard.php';</script>";
+        
     } else {
         echo "<script>alert('Gagal! Cek Username/Password.'); window.location.href='/api/login.php';</script>";
     }
@@ -32,7 +27,7 @@ if (isset($_POST['login'])) {
 <head><title>Login</title></head>
 <body>
     <div style="width:300px; margin:100px auto; padding:20px; border:1px solid #ccc; text-align:center;">
-        <h3>LOGIN (Mode Asli)</h3>
+        <h3>LOGIN TES</h3>
         <form method="POST">
             <input type="text" name="username" placeholder="Username" required style="width:90%; padding:10px; margin:5px;"><br>
             <input type="password" name="password" placeholder="Password" required style="width:90%; padding:10px; margin:5px;"><br>
