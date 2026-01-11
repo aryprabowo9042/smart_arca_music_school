@@ -1,76 +1,50 @@
 <?php
 session_start();
-include '../includes/koneksi.php';
+// PERBAIKAN PATH: ../ berarti naik satu tingkat untuk menemukan koneksi.php
+require_once(__DIR__ . '/../koneksi.php');
 
-if ($_SESSION['status'] != "login" || $_SESSION['role'] != "admin") {
-    header("Location: ../login.php");
-    exit();
-}
-
-// Proses saat tombol simpan ditekan
 if (isset($_POST['simpan'])) {
-    $nama = $_POST['nama'];
-    $username = $_POST['username'];
-    $password = md5($_POST['password']); // Enkripsi password
-    $hp = $_POST['hp'];
-    $alamat = $_POST['alamat'];
+    $username = mysqli_real_escape_string($conn, $_POST['username']);
+    $password = $_POST['password']; 
+    $role     = 'guru'; // Set otomatis sebagai guru
 
-    // Insert ke database dengan role 'guru'
-    $query = "INSERT INTO users (nama_lengkap, username, password, role, no_hp, alamat) 
-              VALUES ('$nama', '$username', '$password', 'guru', '$hp', '$alamat')";
-    
-    if (mysqli_query($koneksi, $query)) {
-        echo "<script>alert('Guru berhasil ditambahkan!'); window.location='data_guru.php';</script>";
+    $query = mysqli_query($conn, "INSERT INTO users (username, password, role) VALUES ('$username', '$password', '$role')");
+
+    if ($query) {
+        echo "<script>alert('Data Guru Berhasil Ditambah!'); window.location.href='index.php';</script>";
     } else {
-        echo "Error: " . mysqli_error($koneksi);
+        echo "<script>alert('Gagal Menambah Data!');</script>";
     }
 }
 ?>
-
 <!DOCTYPE html>
-<html lang="id">
+<html>
 <head>
-    <title>Tambah Guru</title>
-    <link rel="stylesheet" href="style.css">
+    <title>Tambah Guru - Smart Arca</title>
+    <style>
+        body { font-family: sans-serif; padding: 20px; background: #f4f7f6; }
+        .card { background: white; padding: 25px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); max-width: 400px; margin: auto; }
+        h2 { color: #1a73e8; margin-top: 0; }
+        input { width: 100%; padding: 12px; margin: 10px 0; border: 1px solid #ddd; border-radius: 5px; box-sizing: border-box; }
+        button { width: 100%; padding: 12px; background: #0070f3; color: white; border: none; border-radius: 5px; cursor: pointer; font-weight: bold; font-size: 16px; }
+        .back-link { display: block; text-align: center; margin-top: 15px; color: #666; text-decoration: none; }
+    </style>
 </head>
 <body>
 
-    <div class="sidebar">
-        <h2>Smart Arca Admin</h2>
-        <a href="index.php">Dashboard</a>
-        <a href="data_guru.php" style="background-color: #495057; color: white;">Data Guru</a>
-        <a href="../logout.php">Logout</a>
-    </div>
-
-    <div class="content">
-        <h1>Tambah Guru Baru</h1>
-        <div class="card" style="max-width: 600px;">
-            <form action="" method="POST">
-                <div class="form-group">
-                    <label>Nama Lengkap</label>
-                    <input type="text" name="nama" required>
-                </div>
-                <div class="form-group">
-                    <label>Username (untuk login)</label>
-                    <input type="text" name="username" required>
-                </div>
-                <div class="form-group">
-                    <label>Password</label>
-                    <input type="password" name="password" required>
-                </div>
-                <div class="form-group">
-                    <label>No. HP</label>
-                    <input type="text" name="hp">
-                </div>
-                <div class="form-group">
-                    <label>Alamat</label>
-                    <textarea name="alamat" rows="3"></textarea>
-                </div>
-                <button type="submit" name="simpan" class="btn btn-green">Simpan Data</button>
-                <a href="data_guru.php" class="btn btn-red">Batal</a>
-            </form>
-        </div>
-    </div>
+<div class="card">
+    <h2>Tambah Guru Baru</h2>
+    <form method="POST">
+        <label>Nama / Username Guru:</label>
+        <input type="text" name="username" required placeholder="Contoh: Pak Ahmad">
+        
+        <label>Password:</label>
+        <input type="password" name="password" required placeholder="Masukkan password">
+        
+        <button type="submit" name="simpan">SIMPAN DATA GURU</button>
+    </form>
+    <a href="index.php" class="back-link">← Kembali ke Dashboard</a>
+</div>
 
 </body>
 </html>
