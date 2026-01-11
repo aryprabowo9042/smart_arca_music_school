@@ -14,16 +14,16 @@ if (isset($_POST['login'])) {
         $_SESSION['role']     = $data['role'];
         $_SESSION['status']   = "login";
 
-        // GUNAKAN ALAMAT ASLI (Jalan Raya Utama)
+        // TUJUAN BERSIH (Karena vercel.json sudah mengurus rutenya)
         if ($data['role'] == "admin") {
-            echo "<script>window.location.href='/api/admin/index.php';</script>";
+            echo "<script>window.location.href='/admin/index.php';</script>";
         } else if ($data['role'] == "guru") {
-            echo "<script>window.location.href='/api/guru/index.php';</script>";
+            echo "<script>window.location.href='/guru/index.php';</script>";
         } else if ($data['role'] == "murid") {
-            echo "<script>window.location.href='/api/murid/index.php';</script>";
+            echo "<script>window.location.href='/murid/index.php';</script>";
         }
     } else {
-        echo "<script>alert('Gagal! Cek Username/Password.'); window.location.href='/api/login.php';</script>";
+        echo "<script>alert('Gagal! Cek Username/Password.'); window.location.href='/login.php';</script>";
     }
 }
 ?>
