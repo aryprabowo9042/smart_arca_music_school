@@ -1,11 +1,8 @@
 {
   "functions": {
-    "api/**/*.php": { "runtime": "vercel-php@0.7.1" },
-    "admin/**/*.php": { "runtime": "vercel-php@0.7.1" },
-    "guru/**/*.php": { "runtime": "vercel-php@0.7.1" },
-    "murid/**/*.php": { "runtime": "vercel-php@0.7.1" }
+    "api/**/*.php": { "runtime": "vercel-php@0.7.1" }
   },
   "routes": [
-    { "src": "/(.*)", "dest": "/$1" }
+    { "src": "/(.*)", "dest": "/api/$1" }
   ]
 }
