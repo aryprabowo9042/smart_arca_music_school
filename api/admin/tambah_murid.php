@@ -1,89 +1,50 @@
 <?php
 session_start();
-include '../includes/koneksi.php';
+require_once(__DIR__ . '/koneksi.php');
 
-if ($_SESSION['status'] != "login" || $_SESSION['role'] != "admin") { header("Location: ../login.php"); exit(); }
-
+// Proses Simpan Data
 if (isset($_POST['simpan'])) {
-    $nama = $_POST['nama'];
-    $username = $_POST['username'];
-    $password = md5($_POST['password']);
-    $hp = $_POST['hp'];
-    $level = $_POST['level']; 
-    $kelas = $_POST['kelas']; // Menangkap data kelas musik
+    $username = mysqli_real_escape_string($conn, $_POST['username']);
+    $password = $_POST['password']; // Sebaiknya di-hash, tapi kita samakan dulu dengan sistem bapak
+    $role     = 'murid';
 
-    // Query Insert data (Perhatikan penambahan kolom kelas_musik)
-    $query = "INSERT INTO users (nama_lengkap, username, password, role, no_hp, level_musik, kelas_musik) 
-              VALUES ('$nama', '$username', '$password', 'murid', '$hp', '$level', '$kelas')";
-    
-    if (mysqli_query($koneksi, $query)) {
-        echo "<script>alert('Murid berhasil ditambahkan!'); window.location='data_murid.php';</script>";
+    $query = mysqli_query($conn, "INSERT INTO users (username, password, role) VALUES ('$username', '$password', '$role')");
+
+    if ($query) {
+        echo "<script>alert('Data Murid Berhasil Ditambah!'); window.location.href='admin/index.php';</script>";
     } else {
-        echo "Error: " . mysqli_error($koneksi);
+        echo "<script>alert('Gagal Menambah Data!');</script>";
     }
 }
 ?>
 
 <!DOCTYPE html>
-<html lang="id">
+<html>
 <head>
-    <title>Tambah Murid</title>
-    <link rel="stylesheet" href="style.css">
+    <title>Tambah Murid - Smart Arca</title>
+    <style>
+        body { font-family: sans-serif; background: #f4f7f6; padding: 20px; }
+        .form-card { background: white; padding: 20px; border-radius: 8px; max-width: 400px; margin: auto; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        input { width: 100%; padding: 10px; margin: 10px 0; border: 1px solid #ccc; border-radius: 5px; box-sizing: border-box; }
+        button { width: 100%; padding: 10px; background: #0070f3; color: white; border: none; border-radius: 5px; cursor: pointer; font-weight: bold; }
+        .back-link { display: block; text-align: center; margin-top: 15px; color: #666; text-decoration: none; }
+    </style>
 </head>
 <body>
-    <div class="sidebar">
-        <h2>Smart Arca Admin</h2>
-        <a href="index.php">Dashboard</a>
-        <a href="data_guru.php">Data Guru</a>
-        <a href="data_murid.php" style="background-color: #495057; color: white;">Data Murid</a>
-        <a href="../logout.php">Logout</a>
-    </div>
 
-    <div class="content">
-        <h1>Tambah Murid Baru</h1>
-        <div class="card" style="max-width: 600px;">
-            <form action="" method="POST">
-                <div class="form-group">
-                    <label>Nama Lengkap</label>
-                    <input type="text" name="nama" required>
-                </div>
-                <div class="form-group">
-                    <label>Username</label>
-                    <input type="text" name="username" required>
-                </div>
-                <div class="form-group">
-                    <label>Password</label>
-                    <input type="password" name="password" required>
-                </div>
-                
-                <div class="form-group">
-                    <label>Kelas Musik (Instrumen)</label>
-                    <select name="kelas" style="width: 100%; padding: 8px;">
-                        <option value="Piano/Keyboard">Piano/Keyboard</option>
-                        <option value="Gitar Klasik">Gitar Klasik</option>
-                        <option value="Gitar Elektrik">Gitar Elektrik</option>
-                        <option value="Drum">Drum</option>
-                        <option value="Vokal">Vokal</option>
-                        <option value="Theory">Music Theory</option>
-                    </select>
-                </div>
+<div class="form-card">
+    <h2>Tambah Murid Baru</h2>
+    <form method="POST">
+        <label>Username / Nama Murid:</label>
+        <input type="text" name="username" required placeholder="Masukkan nama murid">
+        
+        <label>Password:</label>
+        <input type="password" name="password" required placeholder="Masukkan password">
+        
+        <button type="submit" name="simpan">SIMPAN DATA MURID</button>
+    </form>
+    <a href="admin/index.php" class="back-link">← Kembali ke Dashboard</a>
+</div>
 
-                <div class="form-group">
-                    <label>Level Musik</label>
-                    <select name="level" style="width: 100%; padding: 8px;">
-                        <option value="Basic">Basic (Pemula)</option>
-                        <option value="Intermediate">Intermediate (Menengah)</option>
-                        <option value="Advance">Advance (Mahir)</option>
-                    </select>
-                </div>
-                
-                <div class="form-group">
-                    <label>No. HP</label>
-                    <input type="text" name="hp">
-                </div>
-                <button type="submit" name="simpan" class="btn btn-green">Simpan Data</button>
-            </form>
-        </div>
-    </div>
 </body>
 </html>
