@@ -1,13 +1,18 @@
 <?php
 session_start();
 
-// Mencari file koneksi.php di folder api/ (naik satu tingkat)
-$path_koneksi = dirname(__DIR__) . '/koneksi.php';
+// Mencegah output sebelum header (untuk menghindari error 'headers already sent')
+ob_start();
 
-if (file_exists($path_koneksi)) {
-    require_once($path_koneksi);
+// MENCARI FILE KONEKSI SECARA MUTLAK
+// __DIR__ adalah folder 'api/admin', lalu dirname() akan membawa kita ke folder 'api'
+$folder_api = dirname(__DIR__);
+$file_koneksi = $folder_api . '/koneksi.php';
+
+if (file_exists($file_koneksi)) {
+    require_once($file_koneksi);
 } else {
-    die("Sistem Error: File koneksi tidak ditemukan di: " . $path_koneksi);
+    die("Sistem Error: File koneksi tidak ditemukan di: " . $file_koneksi);
 }
 
 // Proteksi Halaman
@@ -17,17 +22,31 @@ if (!isset($_SESSION['status']) || $_SESSION['status'] != "login" || $_SESSION['
 }
 ?>
 <!DOCTYPE html>
-<html>
+<html lang="id">
 <head>
-    <title>Dashboard Admin</title>
+    <meta charset="UTF-8">
+    <title>Dashboard Admin | Smart Arca</title>
     <link rel="stylesheet" href="/css/landing.css">
+    <style>
+        body { font-family: sans-serif; background: #f0f2f5; margin: 0; display: flex; }
+        .sidebar { width: 250px; background: #2c3e50; color: white; height: 100vh; position: fixed; padding: 20px; }
+        .main { margin-left: 250px; padding: 40px; width: 100%; }
+        .card { background: white; padding: 30px; border-radius: 12px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
+    </style>
 </head>
-<body style="padding: 50px; font-family: sans-serif;">
-    <div style="background: white; padding: 30px; border-radius: 10px; box-shadow: 0 5px 15px rgba(0,0,0,0.1);">
-        <h1>Selamat Datang di Smart Arca, <?php echo $_SESSION['username']; ?>!</h1>
-        <p>Status: <span style="color: green;">● Online (TiDB Cloud Terhubung)</span></p>
+<body>
+    <div class="sidebar">
+        <h2>Smart Arca</h2>
         <hr>
-        <a href="/logout.php" style="color: red; font-weight: bold; text-decoration: none;">🚪 Keluar Sistem</a>
+        <p>User: <strong><?php echo $_SESSION['username']; ?></strong></p>
+        <a href="/logout.php" style="color: #ff7675; text-decoration: none; font-weight: bold;">[🚪 Keluar]</a>
+    </div>
+    <div class="main">
+        <div class="card">
+            <h1>Panel Admin Berhasil Terbuka!</h1>
+            <p>Selamat, Anda telah berhasil menghubungkan Vercel dengan TiDB Cloud secara sempurna.</p>
+        </div>
     </div>
 </body>
 </html>
+<?php ob_end_flush(); ?>
