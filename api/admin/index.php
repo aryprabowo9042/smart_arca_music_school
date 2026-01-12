@@ -69,9 +69,9 @@ $query_jadwal = mysqli_query($conn, $sql_jadwal);
             <p style="margin: 5px 0 0 0; color: #888;">Sistem Informasi Sekolah Musik</p>
         </div>
         <div class="user-info">
-            Login sebagai: <strong><?php echo $_SESSION['username']; ?></strong> (Admin)<br>
-            <span style="color: green;">● Server Online</span>
-        </div>
+    Login sebagai: <strong><?php echo isset($_SESSION['username']) ? $_SESSION['username'] : 'Administrator'; ?></strong> (Admin)<br>
+    <span style="color: green;">● Server Online</span>
+</div>
     </header>
 
     <div class="action-buttons">
