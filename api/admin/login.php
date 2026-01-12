@@ -1,6 +1,6 @@
 <?php
 session_start();
-ob_start(); // Tambahkan ini untuk mencegah error "headers already sent"
+ob_start();
 require_once(__DIR__ . '/../koneksi.php');
 
 if (isset($_POST['login'])) {
@@ -11,21 +11,27 @@ if (isset($_POST['login'])) {
     
     if ($query && mysqli_num_rows($query) > 0) {
         $data = mysqli_fetch_assoc($query);
+        
+        // Simpan ke Session
         $_SESSION['status']   = "login";
         $_SESSION['username'] = $data['username'];
         $_SESSION['role']     = $data['role'];
 
-        // Gunakan Meta Redirect (Cara paling ampuh di Vercel)
+        // Simpan ke Cookie selama 1 jam (Cadangan untuk Vercel)
+        setcookie("user_login", $data['username'], time() + 3600, "/");
+        setcookie("user_role", $data['role'], time() + 3600, "/");
+
+        // Redirect menggunakan JavaScript agar lebih stabil
         if ($data['role'] == "admin") {
-            echo '<meta http-equiv="refresh" content="0;url=index.php">';
+            echo "<script>window.location.replace('index.php');</script>";
         } elseif ($data['role'] == "guru") {
-            echo '<meta http-equiv="refresh" content="0;url=/api/guru/index.php">';
+            echo "<script>window.location.replace('../guru/index.php');</script>";
         } else {
-            echo '<meta http-equiv="refresh" content="0;url=/api/murid/index.php">';
+            echo "<script>window.location.replace('../murid/index.php');</script>";
         }
         exit();
     } else {
-        echo "<script>alert('Login Gagal! Cek Username/Password.');</script>";
+        echo "<script>alert('Login Gagal! Akun tidak ditemukan di TiDB.'); window.location.replace('login.php');</script>";
     }
 }
 ?>
@@ -36,14 +42,15 @@ if (isset($_POST['login'])) {
     <title>Login Smart Arca</title>
     <style>
         body { font-family: sans-serif; background: #1a73e8; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; }
-        .box { background: white; padding: 30px; border-radius: 15px; width: 280px; text-align: center; }
+        .box { background: white; padding: 30px; border-radius: 15px; width: 280px; text-align: center; box-shadow: 0 10px 25px rgba(0,0,0,0.2); }
         input { width: 100%; padding: 12px; margin: 10px 0; border: 1px solid #ddd; border-radius: 8px; box-sizing: border-box; }
         button { width: 100%; padding: 12px; background: #0d47a1; color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: bold; }
     </style>
 </head>
 <body>
     <div class="box">
-        <h3>SMART ARCA</h3>
+        <h2 style="color:#1a73e8; margin-bottom:0;">SMART ARCA</h2>
+        <p style="font-size:12px; color:#666; margin-top:5px;">Silakan Masuk</p>
         <form method="POST">
             <input type="text" name="username" placeholder="Username" required>
             <input type="password" name="password" placeholder="Password" required>
