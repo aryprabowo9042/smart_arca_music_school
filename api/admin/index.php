@@ -4,12 +4,6 @@ session_start();
 error_reporting(E_ALL);
 ini_set('display_errors', 1);
 
-// Cek keamanan: Jika bukan admin, tendang ke login (Opsional tapi disarankan)
-if (!isset($_SESSION['role']) || $_SESSION['role'] != 'admin') {
-    header("Location: ../login.php");
-    exit();
-}
-
 // Panggil koneksi (Naik satu tingkat ke folder api)
 require_once(__DIR__ . '/../koneksi.php');
 
