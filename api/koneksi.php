@@ -3,7 +3,7 @@
 $host = "gateway01.ap-southeast-1.prod.aws.tidbcloud.com"; 
 $user = "2VSxBZjDY3MNSj4.root"; // <--- INI HARUS DIGANTI DENGAN USERNAME ASLI BAPAK
 $pass = "ytvrGFzlPIBWg4eC"; // <--- INI HARUS DIGANTI DENGAN PASSWORD ASLI BAPAK
-$db   = "smart_arca"; 
+$db   = "test"; 
 $port = 4000;
 
 $conn = mysqli_init();
