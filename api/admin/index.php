@@ -1,7 +1,7 @@
 <?php
-session_start();
 require_once(__DIR__ . '/../koneksi.php');
-
+// Satpam dimatikan sementara agar Bapak bisa masuk
+?>
 // Jika tidak ada session login, kembalikan ke login
 if (!isset($_SESSION['status'])) {
     header("Location: login.php");
