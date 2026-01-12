@@ -3,13 +3,8 @@ session_start();
 ob_start();
 require_once(__DIR__ . '/../koneksi.php');
 
-$is_logged_in = (isset($_SESSION['status']) && $_SESSION['status'] == 'login') || isset($_COOKIE['user_login']);
 $is_guru = (isset($_SESSION['role']) && $_SESSION['role'] == 'guru') || (isset($_COOKIE['user_role']) && $_COOKIE['user_role'] == 'guru');
-
-if (!$is_logged_in || !$is_guru) {
-    echo "<script>window.location.replace('../admin/login.php');</script>";
-    exit();
-}
+if (!$is_guru) { echo "<script>window.location.replace('../admin/login.php');</script>"; exit(); }
 
 $id_jadwal = mysqli_real_escape_string($conn, $_GET['id_jadwal'] ?? '');
 $info = mysqli_fetch_assoc(mysqli_query($conn, "SELECT j.*, m.username FROM jadwal j JOIN users m ON j.id_murid = m.id WHERE j.id = '$id_jadwal'"));
@@ -19,14 +14,18 @@ if (isset($_POST['simpan'])) {
     $mtr = mysqli_real_escape_string($conn, $_POST['materi']);
     $prk = mysqli_real_escape_string($conn, $_POST['perkembangan']);
     $lnk = mysqli_real_escape_string($conn, $_POST['link']);
-    $nom = (int)$_POST['nominal'];
+    $nom = (int)$_POST['nominal']; // Pastikan ini terisi angka
 
+    // QUERY INSERT - Pastikan nama kolom 'nominal_bayar' sudah Bapak buat di TiDB
     $sql = "INSERT INTO absensi (id_jadwal, tanggal, materi_ajar, perkembangan_murid, file_materi, nominal_bayar) 
             VALUES ('$id_jadwal', '$tgl', '$mtr', '$prk', '$lnk', '$nom')";
     
     if (mysqli_query($conn, $sql)) {
         $hak = $nom * 0.5;
-        echo "<script>alert('Berhasil! Estimasi Honor Anda (50%): Rp " . number_format($hak, 0, ',', '.') . "'); window.location.href='index.php';</script>";
+        echo "<script>alert('BERHASIL SIMPAN! Saldo Anda bertambah Rp " . number_format($hak, 0, ',', '.') . "'); window.location.href='index.php';</script>";
+    } else {
+        // Jika gagal, tampilkan error database-nya apa
+        echo "<script>alert('GAGAL SIMPAN: " . mysqli_error($conn) . "');</script>";
     }
 }
 ?>
@@ -45,12 +44,12 @@ if (isset($_POST['simpan'])) {
 <body>
 <div class="box">
     <h3>Input Pembelajaran & Bayar</h3>
-    <p>Murid: <strong><?php echo $info['username']; ?></strong></p>
+    <p>Murid: <strong><?php echo $info['username'] ?? 'Tidak Diketahui'; ?></strong></p>
     <form method="POST">
         <label style="font-size:12px;">Tanggal & Nominal Bayar:</label>
         <div style="display:flex; gap:10px;">
             <input type="date" name="tanggal" value="<?php echo date('Y-m-d'); ?>" required>
-            <input type="number" name="nominal" placeholder="Rp Bayar" required>
+            <input type="number" name="nominal" placeholder="Contoh: 150000" required>
         </div>
         <textarea name="materi" placeholder="Materi yang diajarkan" required></textarea>
         <textarea name="perkembangan" placeholder="Catatan perkembangan murid" required></textarea>
