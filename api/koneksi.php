@@ -1,14 +1,21 @@
 <?php
-$host = "gateway01.ap-southeast-1.prod.aws.tidbcloud.com"; // Sesuaikan dengan host TiDB Bapak
-$user = "data-user-bapak.root"; // Sesuaikan username asli
-$pass = "password-asli-bapak"; // Sesuaikan password asli
-$db   = "smart_arca"; // Sesuaikan nama database Bapak
+// Pastikan data ini sesuai dengan yang ada di TiDB Cloud Console Bapak
+$host = "gateway01.ap-southeast-1.prod.aws.tidbcloud.com"; 
+$user = "data-user-bapak.root"; 
+$pass = "password-asli-bapak"; 
+$db   = "smart_arca"; 
 $port = 4000;
 
-// Gunakan mysqli_connect dengan tambahan port jika perlu
-$conn = mysqli_connect($host, $user, $pass, $db, $port);
+// Membuat objek koneksi
+$conn = mysqli_init();
 
-if (!$conn) {
+// Mengatur SSL agar koneksi aman (Wajib untuk TiDB Cloud Serverless)
+mysqli_ssl_set($conn, NULL, NULL, NULL, NULL, NULL);
+
+// Melakukan koneksi dengan bendera MYSQLI_CLIENT_SSL
+$real_connect = mysqli_real_connect($conn, $host, $user, $pass, $db, $port, NULL, MYSQLI_CLIENT_SSL);
+
+if (!$real_connect) {
     die("Koneksi gagal: " . mysqli_connect_error());
 }
 ?>
