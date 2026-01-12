@@ -18,12 +18,14 @@ if (isset($_POST['simpan_absen'])) {
     
     // Logika Upload File
     $nama_file = null;
-    if (!empty($_FILES['dokumen']['name'])) {
-        $nama_file = time() . "_" . $_FILES['dokumen']['name'];
-        $tmp_file  = $_FILES['dokumen']['tmp_name'];
-        $path      = __DIR__ . "/../uploads/" . $nama_file;
-        move_uploaded_file($tmp_file, $path);
-    }
+   // Cari bagian ini di dalam api/guru/absen.php dan ganti:
+if (!empty($_FILES['dokumen']['name'])) {
+    $nama_file = time() . "_" . $_FILES['dokumen']['name'];
+    $tmp_file  = $_FILES['dokumen']['tmp_name'];
+    // Ditambah /modul/ agar masuk ke folder yang sama dengan data XAMPP
+    $path      = __DIR__ . "/../uploads/modul/" . $nama_file; 
+    move_uploaded_file($tmp_file, $path);
+}
 
     $query = mysqli_query($conn, "INSERT INTO absensi (id_jadwal, tanggal, materi_ajar, perkembangan_murid, status_hadir, file_materi) 
                                   VALUES ('$id_jadwal', '$tanggal', '$materi', '$perkembangan', '$status', '$nama_file')");
