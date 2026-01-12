@@ -1,22 +1,24 @@
 <?php
 session_start();
-// Mengaktifkan laporan error untuk memudahkan pelacakan
-error_reporting(E_ALL);
-ini_set('display_errors', 1);
-
-// Panggil koneksi (Naik satu tingkat ke folder api)
 require_once(__DIR__ . '/../koneksi.php');
 
-// 1. Ambil data semua user dari database
-$query_users = mysqli_query($conn, "SELECT * FROM users ORDER BY role ASC, username ASC");
+// Jika tidak ada session login, kembalikan ke login
+if (!isset($_SESSION['status'])) {
+    header("Location: login.php");
+    exit();
+}
 
-// 2. Ambil data Jadwal dengan JOIN untuk menampilkan nama Guru, Murid, dan Alat Musik
-$sql_jadwal = "SELECT jadwal.*, g.username as nama_guru, m.username as nama_murid 
-               FROM jadwal 
-               JOIN users g ON jadwal.id_guru = g.id 
-               JOIN users m ON jadwal.id_murid = m.id 
-               ORDER BY FIELD(hari, 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu', 'Minggu'), jam ASC";
-$query_jadwal = mysqli_query($conn, $sql_jadwal);
+// JIKA GURU NYASAR KE SINI, LEMPAR KE HALAMAN GURU
+if ($_SESSION['role'] == 'guru') {
+    header("Location: ../guru/index.php");
+    exit();
+}
+
+// JIKA MURID NYASAR KE SINI, LEMPAR KE HALAMAN MURID
+if ($_SESSION['role'] == 'murid') {
+    header("Location: ../murid/index.php");
+    exit();
+}
 ?>
 
 <!DOCTYPE html>
