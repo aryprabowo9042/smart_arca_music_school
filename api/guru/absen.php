@@ -28,13 +28,6 @@ if (isset($_POST['simpan_absen'])) {
     $materi = mysqli_real_escape_string($conn, $_POST['materi']);
     $perkembangan = mysqli_real_escape_string($conn, $_POST['perkembangan']);
     
-    // Logika Upload File (Optional)
-    $nama_file = "";
-    if (!empty($_FILES['file_materi']['name'])) {
-        $nama_file = time() . "_" . $_FILES['file_materi']['name'];
-        move_uploaded_file($_FILES['file_materi']['tmp_name'], "../../uploads/modul/" . $nama_file);
-    }
-
     $insert = mysqli_query($conn, "INSERT INTO absensi (id_jadwal, tanggal, materi_ajar, perkembangan_murid, file_materi) 
                                    VALUES ('$id_jadwal', '$tanggal', '$materi', '$perkembangan', '$nama_file')");
 
