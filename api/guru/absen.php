@@ -81,8 +81,8 @@ if (isset($_POST['simpan_absen'])) {
         <label style="font-size: 13px;">Perkembangan Murid:</label>
         <textarea name="perkembangan" rows="3" placeholder="Contoh: Sudah lancar pindah jari, perlu latihan tempo." required></textarea>
         
-        <label style="font-size: 13px;">Upload Modul/Tugas (Optional):</label>
-        <input type="file" name="file_materi">
+        <label style="font-size: 13px;">Link Materi (Google Drive/Dropbox):</label>
+        <input type="url" name="link_materi" placeholder="https://drive.google.com/...">
         
         <button type="submit" name="simpan_absen">SIMPAN LAPORAN</button>
         <a href="index.php" class="back-btn">← Batal & Kembali</a>
