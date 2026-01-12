@@ -1,7 +1,7 @@
 <?php
 session_start();
 session_destroy();
-// Kembali ke halaman login
-header("location: login.php");
+// Arahkan kembali ke halaman login di dalam folder admin
+header("Location: admin/login.php");
 exit();
 ?>
