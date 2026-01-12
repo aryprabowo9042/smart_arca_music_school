@@ -11,21 +11,21 @@ if (isset($_POST['login'])) {
     if ($query && mysqli_num_rows($query) > 0) {
         $data = mysqli_fetch_assoc($query);
         
+        $_SESSION['status']   = "login";
         $_SESSION['username'] = $data['username'];
         $_SESSION['role']     = $data['role'];
-        $_SESSION['status']   = "login";
 
-        // --- PERBAIKAN PENGATURAN ARAH LOGIN (REDIRECT) ---
+        // Pengalihan berdasarkan role
         if ($data['role'] == "admin") {
-            header("Location: index.php"); // Tetap di folder admin
+            header("Location: index.php");
         } elseif ($data['role'] == "guru") {
-            header("Location: ../guru/index.php"); // Masuk ke folder guru
+            header("Location: /guru/index.php");
         } elseif ($data['role'] == "murid") {
-            header("Location: ../murid/index.php"); // Masuk ke folder murid
+            header("Location: /murid/index.php");
         }
         exit();
     } else {
-        echo "<script>alert('Gagal! Username atau Password salah.');</script>";
+        echo "<script>alert('Gagal! Username atau Password salah.'); window.location.href='login.php';</script>";
     }
 }
 ?>
@@ -33,25 +33,22 @@ if (isset($_POST['login'])) {
 <html>
 <head>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Login - Smart Arca</title>
+    <title>Login Smart Arca</title>
     <style>
-        body { font-family: 'Segoe UI', sans-serif; background: #f0f2f5; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; }
-        .box { background: white; padding: 35px; border-radius: 15px; box-shadow: 0 8px 25px rgba(0,0,0,0.1); width: 300px; text-align: center; }
-        h2 { color: #1a73e8; margin-bottom: 25px; }
+        body { font-family: sans-serif; background: #f0f2f5; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; }
+        .box { background: white; padding: 30px; border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.1); width: 300px; text-align: center; }
         input { width: 100%; padding: 12px; margin: 10px 0; border: 1px solid #ddd; border-radius: 8px; box-sizing: border-box; }
-        button { width: 100%; padding: 12px; background: #1a73e8; color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: bold; font-size: 16px; margin-top: 10px; }
-        button:hover { background: #1557b0; }
+        button { width: 100%; padding: 12px; background: #1a73e8; color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: bold; width: 100%; }
     </style>
 </head>
 <body>
     <div class="box">
-        <h2>SMART ARCA</h2>
+        <h2 style="color:#1a73e8;">SMART ARCA</h2>
         <form method="POST">
-            <input type="text" name="username" placeholder="Username" required autofocus>
+            <input type="text" name="username" placeholder="Username" required>
             <input type="password" name="password" placeholder="Password" required>
             <button type="submit" name="login">MASUK</button>
         </form>
-        <p style="font-size: 12px; color: #888; margin-top: 20px;">Sistem Informasi Sekolah Musik</p>
     </div>
 </body>
 </html>
