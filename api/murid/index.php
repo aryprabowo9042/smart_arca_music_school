@@ -1,16 +1,20 @@
 <?php
-// 1. PRIORITAS PERTAMA: CEK LOGOUT
-// Logika ini harus paling atas agar tidak ditolak sistem saat mau keluar
+// 1. PRIORITAS UTAMA: CEK LOGOUT
+// Kode ini ditaruh paling atas agar dijalankan SEBELUM pengecekan login
 if (isset($_GET['action']) && $_GET['action'] == 'logout') {
+    // Hapus semua cookie
     setcookie('user_role', '', time() - 3600, '/');
     setcookie('user_id', '', time() - 3600, '/');
     setcookie('user_username', '', time() - 3600, '/');
+    setcookie('user_name', '', time() - 3600, '/');
+    
+    // Lempar kembali ke halaman login
     header("Location: ../admin/login.php");
     exit();
 }
 
 // 2. CEK LOGIN (COOKIE MODE)
-// Jika tidak ada tiket murid, kembalikan ke login (tanpa layar merah)
+// Jika tidak ada cookie 'murid', langsung lempar ke login (Tanpa layar merah lagi)
 if (!isset($_COOKIE['user_role']) || $_COOKIE['user_role'] != 'murid') {
     header("Location: ../admin/login.php");
     exit();
@@ -18,7 +22,7 @@ if (!isset($_COOKIE['user_role']) || $_COOKIE['user_role'] != 'murid') {
 
 require_once(__DIR__ . '/../koneksi.php');
 
-// 3. AMBIL DATA DARI COOKIE
+// 3. AMBIL DATA MURID DARI COOKIE
 $id_murid = $_COOKIE['user_id'];
 $username = $_COOKIE['user_username'] ?? 'Siswa';
 
