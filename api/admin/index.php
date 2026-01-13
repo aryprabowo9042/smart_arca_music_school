@@ -46,6 +46,7 @@ $total_omzet = $q_omzet['total'] ?? 0;
         .bg-calendar { background: #fff3e0; color: #ef6c00; }
         
         .btn-logout { background: #fee2e2; color: #dc2626; padding: 10px 20px; border-radius: 10px; text-decoration: none; font-weight: bold; font-size: 14px; }
+         <a href="../logout.php" class="btn-logout">Keluar</a>
     </style>
 </head>
 <body>
