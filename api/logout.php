@@ -1,7 +1,15 @@
 <?php
 session_start();
-session_unset();
+// Hapus semua session
+$_SESSION = array();
 session_destroy();
-header("Location: /admin/login.php");
+
+// Hapus cookie login jika ada
+if (isset($_COOKIE['user_login'])) {
+    setcookie('user_login', '', time() - 3600, '/');
+    setcookie('user_role', '', time() - 3600, '/');
+}
+
+// Redirect ke halaman login di folder admin
+header("Location: /api/admin/login.php");
 exit();
-?>
