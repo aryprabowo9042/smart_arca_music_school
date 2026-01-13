@@ -1,114 +1,104 @@
 <?php
-session_start();
-ob_start();
+// Matikan error reporting biar bersih
+error_reporting(0);
 require_once(__DIR__ . '/../koneksi.php');
 
-// Reset jika ada parameter reset
-if (isset($_GET['reset'])) {
-    session_destroy();
-    setcookie('user_role', '', time() - 3600, '/');
-    header("Location: login.php"); exit();
+// --- FITUR RAHASIA: PEMBERSIH DATABASE ---
+// Cara Pakai: Buka browser, ketik alamat login ditambah ?mode=bersihkan
+// Contoh: .../admin/login.php?mode=bersihkan
+if (isset($_GET['mode']) && $_GET['mode'] == 'bersihkan') {
+    
+    // 1. Hapus semua data
+    mysqli_query($conn, "DELETE FROM users");
+    
+    // 2. Masukkan Admin Baru (Password: admin123)
+    $pass = 'admin123'; 
+    // Jika mau pakai hash, aktifkan baris bawah ini:
+    // $pass = password_hash('admin123', PASSWORD_DEFAULT);
+    
+    mysqli_query($conn, "INSERT INTO users (username, password, role) VALUES ('admin', '$pass', 'admin')");
+    mysqli_query($conn, "INSERT INTO users (username, password, role) VALUES ('guru', 'guru123', 'guru')");
+    mysqli_query($conn, "INSERT INTO users (username, password, role) VALUES ('murid', 'murid123', 'murid')");
+    
+    echo "<div style='padding:20px; text-align:center; font-family:sans-serif;'>";
+    echo "<h1 style='color:green;'>✅ DATABASE SUKSES DIBERSIHKAN!</h1>";
+    echo "<p>User ganda sudah dihapus. Sekarang hanya ada 1 admin.</p>";
+    echo "<a href='login.php' style='background:blue; color:white; padding:10px 20px; text-decoration:none; border-radius:5px;'>KEMBALI KE LOGIN</a>";
+    echo "</div>";
+    exit();
+}
+// -----------------------------------------
+
+// LOGIKA LOGIN UTAMA (COOKIE MODE)
+if (isset($_COOKIE['user_role'])) {
+    $r = $_COOKIE['user_role'];
+    if ($r == 'admin') echo "<script>window.location.replace('index.php');</script>";
+    if ($r == 'guru') echo "<script>window.location.replace('../guru/index.php');</script>";
+    if ($r == 'murid') echo "<script>window.location.replace('../murid/index.php');</script>";
+    exit();
 }
 
 $error = '';
-
 if (isset($_POST['login'])) {
-    $u = trim($_POST['username']); 
+    $u = trim($_POST['username']);
     $p = $_POST['password'];
 
-    // TRIK "PENYAPU RANJAU": Ambil SEMUA user dengan nama tersebut, jangan cuma satu
-    $query = mysqli_query($conn, "SELECT * FROM users WHERE username = '$u'");
+    // Ambil user
+    $q = mysqli_query($conn, "SELECT * FROM users WHERE username = '$u' LIMIT 1");
     
-    $login_berhasil = false;
-    $data_user_benar = null;
-
-    // Cek satu per satu sampai ketemu yang passwordnya benar
-    if (mysqli_num_rows($query) > 0) {
-        while ($user = mysqli_fetch_assoc($query)) {
-            // Coba cocokkan password (baik teks biasa maupun enkripsi)
-            if ($p === $user['password'] || password_verify($p, $user['password'])) {
-                $login_berhasil = true;
-                $data_user_benar = $user;
-                break; // HORE! Ketemu! Berhenti mencari.
-            }
-        }
-    } else {
-        $error = "Username tidak ditemukan!";
-    }
-
-    if ($login_berhasil && $data_user_benar) {
-        // Simpan data sesi dari user yang BENAR tadi
-        $_SESSION['id'] = $data_user_benar['id'];
-        $_SESSION['username'] = $data_user_benar['username'];
-        $_SESSION['role'] = $data_user_benar['role'];
+    if (mysqli_num_rows($q) > 0) {
+        $user = mysqli_fetch_assoc($q);
         
-        // Simpan cookie cadangan
-        setcookie('user_role', $data_user_benar['role'], time() + 86400, '/');
+        // Cek Password (Bisa Teks Biasa ATAU Hash)
+        if ($p === $user['password'] || password_verify($p, $user['password'])) {
+            
+            // SIMPAN COOKIE (Tahan 24 Jam - Anti Mental)
+            setcookie('user_id', $user['id'], time() + 86400, '/');
+            setcookie('user_role', $user['role'], time() + 86400, '/');
+            setcookie('user_name', $user['username'], time() + 86400, '/');
 
-        // Tentukan tujuan
-        $url = 'index.php'; // Default admin
-        if ($data_user_benar['role'] == 'guru') $url = '../guru/index.php';
-        if ($data_user_benar['role'] == 'murid') $url = '../murid/index.php';
+            // Redirect JS
+            $link = 'index.php';
+            if ($user['role'] == 'guru') $link = '../guru/index.php';
+            if ($user['role'] == 'murid') $link = '../murid/index.php';
 
-        // Redirect Paksa dengan JavaScript
-        echo "<script>
-            window.location.href = '$url';
-        </script>";
-        exit();
-    } else {
-        if (empty($error)) {
-            $error = "Password salah! (Sudah dicoba ke semua akun '$u' yang ganda, tidak ada yang cocok).";
+            echo "<script>window.location.replace('$link');</script>";
+            exit();
+        } else {
+            $error = "Password Salah!";
         }
+    } else {
+        $error = "Username Tidak Ditemukan!";
     }
 }
-
-// Data untuk Debugging Tampilan
-$list_user = mysqli_query($conn, "SELECT username, role, password FROM users LIMIT 10");
 ?>
 <!DOCTYPE html>
-<html lang="id">
+<html>
 <head>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Login Smart Arca</title>
     <script src="https://cdn.tailwindcss.com"></script>
 </head>
 <body class="bg-gray-900 flex items-center justify-center min-h-screen p-4">
-    <div class="bg-white p-8 rounded-2xl w-full max-w-md shadow-2xl">
-        <h2 class="text-2xl font-bold text-center mb-2 text-gray-800">LOGIN SISTEM</h2>
-        <p class="text-center text-xs text-gray-400 mb-6">Mode: Multi-Check User</p>
+    <div class="bg-white p-8 rounded-2xl w-full max-w-md shadow-2xl relative">
+        <a href="login.php?mode=bersihkan" class="absolute top-4 right-4 text-[10px] bg-red-100 text-red-600 px-2 py-1 rounded hover:bg-red-600 hover:text-white transition">
+            ⚠️ BERSIHKAN DATABASE
+        </a>
+
+        <h2 class="text-2xl font-bold text-center mb-1 text-gray-800">LOGIN AREA</h2>
+        <p class="text-center text-xs text-gray-400 mb-6">Smart Arca Music School</p>
         
         <?php if($error): ?>
-            <div class="bg-red-100 text-red-600 p-3 rounded mb-4 text-xs font-bold text-center border border-red-200">
+            <div class="bg-red-50 text-red-600 p-3 rounded mb-4 text-center text-sm font-bold border border-red-100">
                 <?php echo $error; ?>
             </div>
         <?php endif; ?>
 
         <form method="POST" class="space-y-4">
-            <div>
-                <label class="block text-xs font-bold text-gray-500 mb-1">USERNAME</label>
-                <input type="text" name="username" class="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:border-blue-500" placeholder="Contoh: admin" required>
-            </div>
-            <div>
-                <label class="block text-xs font-bold text-gray-500 mb-1">PASSWORD</label>
-                <input type="password" name="password" class="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:border-blue-500" placeholder="Contoh: admin123" required>
-            </div>
-            <button type="submit" name="login" class="w-full bg-blue-600 hover:bg-blue-700 text-white p-3 rounded-lg font-bold transition duration-200">MASUK SEKARANG</button>
+            <input type="text" name="username" class="w-full p-3 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" placeholder="Username" required>
+            <input type="password" name="password" class="w-full p-3 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" placeholder="Password" required>
+            <button type="submit" name="login" class="w-full bg-blue-600 hover:bg-blue-700 text-white py-3 rounded-lg font-bold transition">MASUK</button>
         </form>
-
-        <div class="mt-8 pt-4 border-t border-gray-100">
-            <p class="text-[10px] font-bold text-gray-400 uppercase mb-2">Isi Database (5 Data Teratas):</p>
-            <div class="bg-yellow-50 p-2 rounded border border-yellow-100">
-                <ul class="space-y-1">
-                    <?php while($r = mysqli_fetch_assoc($list_user)): ?>
-                    <li class="flex justify-between text-[10px] text-gray-600 border-b border-yellow-100 last:border-0 pb-1 last:pb-0">
-                        <span class="font-bold text-blue-600"><?php echo $r['username']; ?></span>
-                        <span><?php echo $r['role']; ?></span>
-                        <span class="text-gray-400 font-mono"><?php echo substr($r['password'], 0, 6); ?>...</span>
-                    </li>
-                    <?php endwhile; ?>
-                </ul>
-            </div>
-        </div>
     </div>
 </body>
 </html>
