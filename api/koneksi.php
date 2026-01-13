@@ -2,7 +2,7 @@
 // AMBIL DATA INI DARI DASHBOARD TiDB CLOUD (Tombol Connect)
 $host = "gateway01.ap-southeast-1.prod.aws.tidbcloud.com"; 
 $user = "2VSxBZjDY3MNSj4.root"; // <--- INI HARUS DIGANTI DENGAN USERNAME ASLI BAPAK
-$pass = "ytvrGFzlPIBWg4eC"; // <--- INI HARUS DIGANTI DENGAN PASSWORD ASLI BAPAK
+$pass = "XpaSuXbQGXB458nh"; // <--- INI HARUS DIGANTI DENGAN PASSWORD ASLI BAPAK
 $db   = "test"; 
 $port = 4000;
 
