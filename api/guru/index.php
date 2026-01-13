@@ -1,36 +1,144 @@
 <?php
-session_start();
-ob_start();
-
-// Proteksi Guru: Jika tidak ada session, lempar ke login
-// PENTING: Gunakan path yang benar ke login.php
-if (!isset($_SESSION['role']) || $_SESSION['role'] != 'guru') {
-    // Jika Vercel error membaca session, coba cek cookie sebagai cadangan
-    if (!isset($_COOKIE['user_role']) || $_COOKIE['user_role'] != 'guru') {
-        echo "<script>window.location.replace('../admin/login.php');</script>";
-        exit();
-    }
+// Cek Login (Cookie Mode)
+if (!isset($_COOKIE['user_role']) || $_COOKIE['user_role'] != 'guru') {
+    header("Location: ../admin/login.php");
+    exit();
 }
 
 require_once(__DIR__ . '/../koneksi.php');
 
-$nama_guru = $_SESSION['username'] ?? 'Guru';
+$id_guru = $_COOKIE['user_id'];
+$nama_guru = $_COOKIE['user_username'] ?? 'Guru';
+
+// 1. TENTUKAN HARI INI (Bahasa Indonesia)
+$hari_inggris = date('l');
+$map_hari = [
+    'Sunday' => 'Minggu', 'Monday' => 'Senin', 'Tuesday' => 'Selasa', 
+    'Wednesday' => 'Rabu', 'Thursday' => 'Kamis', 'Friday' => 'Jumat', 'Saturday' => 'Sabtu'
+];
+$hari_ini = $map_hari[$hari_inggris];
+
+// 2. AMBIL JADWAL HARI INI
+$q_jadwal = mysqli_query($conn, "
+    SELECT j.*, m.username as nama_murid 
+    FROM jadwal j 
+    JOIN users m ON j.id_murid = m.id 
+    WHERE j.id_guru = '$id_guru' AND j.hari = '$hari_ini'
+    ORDER BY j.jam ASC
+");
+
+// 3. HITUNG SALDO HONOR (PENTING!)
+// a. Total Hak (50% dari total omzet kelas dia)
+$q_hak = mysqli_query($conn, "
+    SELECT SUM(a.nominal_bayar) * 0.5 as total_hak
+    FROM absensi a
+    JOIN jadwal j ON a.id_jadwal = j.id
+    WHERE j.id_guru = '$id_guru'
+");
+$total_hak = mysqli_fetch_assoc($q_hak)['total_hak'] ?? 0;
+
+// b. Total Honor yang SUDAH Diterima (Dari tabel keuangan admin)
+$q_terima = mysqli_query($conn, "
+    SELECT SUM(nominal) as total_terima 
+    FROM keuangan 
+    WHERE nama_pelaku = '$nama_guru' AND jenis = 'keluar'
+");
+$total_terima = mysqli_fetch_assoc($q_terima)['total_terima'] ?? 0;
+
+// c. Sisa Saldo yang Belum Dibayar Admin
+$saldo_belum_cair = $total_hak - $total_terima;
+
+// 4. RIWAYAT PENERIMAAN HONOR TERAKHIR
+$q_riwayat_honor = mysqli_query($conn, "
+    SELECT * FROM keuangan 
+    WHERE nama_pelaku = '$nama_guru' AND jenis = 'keluar' 
+    ORDER BY tanggal DESC LIMIT 5
+");
 ?>
 <!DOCTYPE html>
-<html>
+<html lang="id">
 <head>
+    <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Dashboard Guru</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
 </head>
-<body class="bg-gray-100 min-h-screen">
-    <nav class="bg-indigo-600 p-4 text-white flex justify-between">
-        <h1 class="font-bold">GURU DASHBOARD</h1>
-        <a href="../admin/index.php?action=logout" class="text-sm bg-indigo-800 px-3 py-1 rounded">Keluar</a>
-    </nav>
-    <div class="p-6 text-center">
-        <h2 class="text-xl">Selamat Datang, <strong><?php echo $nama_guru; ?></strong></h2>
-        <p class="text-gray-500">Anda berhasil masuk ke sistem guru.</p>
+<body class="bg-gray-50 min-h-screen pb-20">
+
+    <div class="bg-indigo-600 p-6 rounded-b-[30px] shadow-lg text-white mb-6">
+        <div class="flex justify-between items-start">
+            <div>
+                <p class="text-indigo-200 text-xs">Selamat Mengajar,</p>
+                <h1 class="text-2xl font-bold"><?php echo htmlspecialchars($nama_guru); ?></h1>
+            </div>
+            <a href="index.php?action=logout" onclick="document.cookie='user_role=; path=/;'; window.location='../admin/login.php';" class="bg-white/20 p-2 rounded-lg text-sm hover:bg-white/30 transition">
+                <i class="fas fa-sign-out-alt"></i>
+            </a>
+        </div>
+
+        <div class="mt-6 bg-white/10 backdrop-blur-md border border-white/20 p-4 rounded-xl flex justify-between items-center">
+            <div>
+                <p class="text-xs text-indigo-100">Honor Belum Dicairkan</p>
+                <h2 class="text-2xl font-bold">Rp <?php echo number_format($saldo_belum_cair); ?></h2>
+            </div>
+            <div class="bg-white text-indigo-600 w-10 h-10 rounded-full flex items-center justify-center font-bold shadow">
+                <i class="fas fa-wallet"></i>
+            </div>
+        </div>
     </div>
+
+    <div class="max-w-md mx-auto px-4 space-y-6">
+
+        <div>
+            <div class="flex justify-between items-center mb-3">
+                <h3 class="font-bold text-gray-700 border-l-4 border-indigo-600 pl-3">Jadwal Hari Ini (<?php echo $hari_ini; ?>)</h3>
+                <span class="text-xs bg-gray-200 px-2 py-1 rounded text-gray-600"><?php echo date('d M Y'); ?></span>
+            </div>
+
+            <?php if(mysqli_num_rows($q_jadwal) > 0): ?>
+                <div class="space-y-3">
+                    <?php while($j = mysqli_fetch_assoc($q_jadwal)): ?>
+                    <div class="bg-white p-4 rounded-xl shadow-sm border border-gray-100 flex justify-between items-center">
+                        <div>
+                            <h4 class="font-bold text-gray-800"><?php echo $j['nama_murid']; ?></h4>
+                            <p class="text-xs text-gray-500 mb-1"><?php echo $j['alat_musik']; ?> • <?php echo $j['jam']; ?></p>
+                        </div>
+                        <a href="absen.php?id_jadwal=<?php echo $j['id']; ?>" class="bg-indigo-600 text-white px-4 py-2 rounded-lg text-xs font-bold shadow-lg shadow-indigo-200 hover:bg-indigo-700 transition">
+                            INPUT ABSEN
+                        </a>
+                    </div>
+                    <?php endwhile; ?>
+                </div>
+            <?php else: ?>
+                <div class="bg-white p-6 rounded-xl text-center shadow-sm">
+                    <p class="text-gray-400 text-sm">Tidak ada jadwal les hari ini.</p>
+                </div>
+            <?php endif; ?>
+        </div>
+
+        <div>
+            <h3 class="font-bold text-gray-700 border-l-4 border-green-500 pl-3 mb-3">Riwayat Terima Honor</h3>
+            <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+                <?php if(mysqli_num_rows($q_riwayat_honor) > 0): ?>
+                    <ul class="divide-y divide-gray-100">
+                        <?php while($h = mysqli_fetch_assoc($q_riwayat_honor)): ?>
+                        <li class="p-4 flex justify-between items-center">
+                            <div>
+                                <p class="text-xs text-gray-400"><?php echo date('d M Y', strtotime($h['tanggal'])); ?></p>
+                                <p class="text-xs font-bold text-gray-600 line-clamp-1"><?php echo $h['keterangan']; ?></p>
+                            </div>
+                            <span class="text-green-600 font-bold text-sm">+ Rp <?php echo number_format($h['nominal']); ?></span>
+                        </li>
+                        <?php endwhile; ?>
+                    </ul>
+                <?php else: ?>
+                    <div class="p-4 text-center text-xs text-gray-400">Belum ada riwayat pencairan honor.</div>
+                <?php endif; ?>
+            </div>
+        </div>
+
+    </div>
+
 </body>
 </html>
