@@ -1,15 +1,14 @@
 <?php
 session_start();
-// Hapus semua session
-$_SESSION = array();
+// Hapus semua data session
+session_unset();
 session_destroy();
 
-// Hapus cookie login jika ada
+// Hapus cookie jika ada (opsional)
 if (isset($_COOKIE['user_login'])) {
     setcookie('user_login', '', time() - 3600, '/');
-    setcookie('user_role', '', time() - 3600, '/');
 }
 
-// Redirect ke halaman login di folder admin
-header("Location: /api/admin/login.php");
+// Redirect paksa menggunakan JavaScript agar lebih aman di Vercel
+echo "<script>window.location.replace('admin/login.php');</script>";
 exit();
