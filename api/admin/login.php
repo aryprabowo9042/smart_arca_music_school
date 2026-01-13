@@ -3,45 +3,42 @@ session_start();
 ob_start();
 require_once(__DIR__ . '/../koneksi.php');
 
-// Reset Session jika diperlukan
+// Hapus Sesi jika diminta
 if (isset($_GET['reset'])) {
     session_destroy();
     header("Location: login.php"); exit();
 }
 
 $error = '';
-
 if (isset($_POST['login'])) {
     $u = trim($_POST['username']); 
     $p = $_POST['password'];
 
-    // Ambil user pertama yang cocok (menghindari error jika data ganda)
+    // Ambil satu user saja (limit 1) untuk menghindari error data ganda
     $query = mysqli_query($conn, "SELECT * FROM users WHERE username = '$u' LIMIT 1");
     
     if (mysqli_num_rows($query) > 0) {
         $user = mysqli_fetch_assoc($query);
         
-        // Cek Password (Mendukung teks biasa & hash)
+        // Cek apakah password cocok (Teks biasa atau Enkripsi)
         if ($p === $user['password'] || password_verify($p, $user['password'])) {
             $_SESSION['id'] = $user['id'];
             $_SESSION['username'] = $user['username'];
             $_SESSION['role'] = $user['role'];
             session_write_close();
 
-            // Redirect menggunakan JS (Paling aman di Vercel)
-            $target = ($user['role'] == 'admin') ? 'index.php' : (($user['role'] == 'guru') ? '../guru/index.php' : '../murid/index.php');
-            echo "<script>window.location.replace('$target');</script>";
+            // Redirect ke dashboard admin
+            echo "<script>window.location.replace('index.php');</script>";
             exit();
         } else {
-            $error = "Password untuk user '$u' salah!";
+            $error = "Password untuk '$u' salah!";
         }
     } else {
         $error = "Username '$u' tidak ditemukan!";
     }
 }
 
-// Ambil data untuk debug kotak kuning
-$list_user = mysqli_query($conn, "SELECT username, role FROM users LIMIT 5");
+$list_user = mysqli_query($conn, "SELECT username, role FROM users LIMIT 10");
 ?>
 <!DOCTYPE html>
 <html>
@@ -52,7 +49,7 @@ $list_user = mysqli_query($conn, "SELECT username, role FROM users LIMIT 5");
 </head>
 <body class="bg-slate-900 flex flex-col items-center justify-center min-h-screen p-4">
     <div class="bg-white p-8 rounded-3xl shadow-2xl w-full max-w-md">
-        <h2 class="text-3xl font-extrabold text-center mb-8 text-gray-800 tracking-tight">LOGIN PORTAL</h2>
+        <h2 class="text-3xl font-bold text-center mb-8 text-gray-800">LOGIN PORTAL</h2>
         
         <?php if($error): ?>
             <div class="bg-red-50 text-red-600 p-4 rounded-xl mb-6 text-sm font-bold border border-red-100 text-center italic">
@@ -61,19 +58,13 @@ $list_user = mysqli_query($conn, "SELECT username, role FROM users LIMIT 5");
         <?php endif; ?>
 
         <form method="POST" class="space-y-5">
-            <div>
-                <label class="text-xs font-bold text-gray-400 uppercase ml-1">Username</label>
-                <input type="text" name="username" class="w-full p-4 bg-gray-50 border border-gray-100 rounded-2xl outline-none focus:ring-2 focus:ring-blue-500 transition-all" placeholder="admin" required>
-            </div>
-            <div>
-                <label class="text-xs font-bold text-gray-400 uppercase ml-1">Password</label>
-                <input type="password" name="password" class="w-full p-4 bg-gray-50 border border-gray-100 rounded-2xl outline-none focus:ring-2 focus:ring-blue-500 transition-all" placeholder="••••••••" required>
-            </div>
-            <button type="submit" name="login" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-4 rounded-2xl shadow-lg shadow-blue-200 active:scale-95 transition-all uppercase tracking-widest">MASUK</button>
+            <input type="text" name="username" class="w-full p-4 bg-gray-50 border rounded-2xl outline-none" placeholder="Username" required>
+            <input type="password" name="password" class="w-full p-4 bg-gray-50 border rounded-2xl outline-none" placeholder="Password" required>
+            <button type="submit" name="login" class="w-full bg-blue-600 text-white font-bold py-4 rounded-2xl shadow-lg active:scale-95 transition-all">MASUK</button>
         </form>
 
         <div class="mt-8 p-5 bg-amber-50 border border-amber-100 rounded-2xl">
-            <p class="text-[10px] font-black text-amber-700 uppercase mb-3">Database Info:</p>
+            <p class="text-[10px] font-bold text-amber-700 uppercase mb-3 underline">Status Database:</p>
             <ul class="text-[12px] text-gray-700 space-y-2">
                 <?php while($row = mysqli_fetch_assoc($list_user)): ?>
                     <li class="flex justify-between border-b border-amber-100 pb-1">
@@ -85,7 +76,7 @@ $list_user = mysqli_query($conn, "SELECT username, role FROM users LIMIT 5");
         </div>
         
         <div class="mt-6 text-center">
-            <a href="login.php?reset=1" class="text-xs text-gray-400 hover:text-blue-500 transition underline">Reset Sesi & Cache</a>
+            <a href="login.php?reset=1" class="text-xs text-gray-400 hover:text-blue-500 underline">Reset Sesi & Cache</a>
         </div>
     </div>
 </body>
