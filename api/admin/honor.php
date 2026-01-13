@@ -11,29 +11,41 @@ if (!isset($_COOKIE['user_role']) || $_COOKIE['user_role'] != 'admin') {
 require_once(__DIR__ . '/../koneksi.php');
 
 // ==========================================
-// 🛠️ FITUR AUTO-REPAIR DATABASE (PENTING)
+// 🛠️ FITUR AUTO-REPAIR DATABASE (ANTI-ERROR)
 // ==========================================
-// Kode ini akan otomatis menambahkan kolom 'nama_pelaku' jika belum ada
-$cek_kolom = mysqli_query($conn, "SHOW COLUMNS FROM keuangan LIKE 'nama_pelaku'");
-if (mysqli_num_rows($cek_kolom) == 0) {
-    // Tambahkan kolom nama_pelaku
+// 1. Cek & Tambah Kolom 'nama_pelaku' jika belum ada
+$cek_nama = mysqli_query($conn, "SHOW COLUMNS FROM keuangan LIKE 'nama_pelaku'");
+if (mysqli_num_rows($cek_nama) == 0) {
     mysqli_query($conn, "ALTER TABLE keuangan ADD COLUMN nama_pelaku VARCHAR(100) AFTER tanggal");
-    // Perlebar kolom jenis agar tidak error truncated
-    mysqli_query($conn, "ALTER TABLE keuangan MODIFY COLUMN jenis VARCHAR(50)");
 }
+
+// 2. Perbaiki Kolom 'jumlah' (Penyebab Error Fatal Bapak Tadi)
+// Kita ubah agar kolom 'jumlah' memiliki nilai default 1, jadi tidak error walau tidak diisi
+$cek_jumlah = mysqli_query($conn, "SHOW COLUMNS FROM keuangan LIKE 'jumlah'");
+if (mysqli_num_rows($cek_jumlah) > 0) {
+    // Ubah jadi ada default 1
+    mysqli_query($conn, "ALTER TABLE keuangan MODIFY COLUMN jumlah INT DEFAULT 1");
+} else {
+    // Jika tidak ada, buat saja biar aman (opsional, untuk konsistensi)
+    mysqli_query($conn, "ALTER TABLE keuangan ADD COLUMN jumlah INT DEFAULT 1 AFTER nominal");
+}
+
+// 3. Perlebar kolom 'jenis'
+mysqli_query($conn, "ALTER TABLE keuangan MODIFY COLUMN jenis VARCHAR(50)");
 // ==========================================
+
 
 // --- PROSES SIMPAN TRANSAKSI ---
 if (isset($_POST['simpan_transaksi'])) {
     $tgl  = $_POST['tanggal'];
-    $nama = mysqli_real_escape_string($conn, $_POST['nama_pelaku']); // Nama Pemberi/Penerima
+    $nama = mysqli_real_escape_string($conn, $_POST['nama_pelaku']); 
     $ket  = mysqli_real_escape_string($conn, $_POST['keterangan']);
     $tip  = $_POST['jenis']; 
     $nom  = (int)$_POST['nominal'];
-
-    // Insert Data
-    $sql_insert = "INSERT INTO keuangan (tanggal, nama_pelaku, keterangan, jenis, nominal) 
-                   VALUES ('$tgl', '$nama', '$ket', '$tip', '$nom')";
+    
+    // Kita isi juga kolom 'jumlah' dengan angka 1 agar error hilang total
+    $sql_insert = "INSERT INTO keuangan (tanggal, nama_pelaku, keterangan, jenis, nominal, jumlah) 
+                   VALUES ('$tgl', '$nama', '$ket', '$tip', '$nom', 1)";
     
     if (mysqli_query($conn, $sql_insert)) {
         header("Location: honor.php"); 
@@ -43,25 +55,20 @@ if (isset($_POST['simpan_transaksi'])) {
     }
 }
 
-// --- HITUNG KEUANGAN (REAL TIME) ---
-// 1. Pemasukan Les (Otomatis dari Absen)
+// --- HITUNG KEUANGAN ---
 $q_spp = mysqli_query($conn, "SELECT SUM(nominal_bayar) as total FROM absensi");
 $total_spp = mysqli_fetch_assoc($q_spp)['total'] ?? 0;
 
-// 2. Pemasukan Manual
 $q_masuk = mysqli_query($conn, "SELECT SUM(nominal) as total FROM keuangan WHERE jenis='masuk'");
 $total_masuk_manual = mysqli_fetch_assoc($q_masuk)['total'] ?? 0;
 
-// 3. Pengeluaran Manual
 $q_keluar = mysqli_query($conn, "SELECT SUM(nominal) as total FROM keuangan WHERE jenis='keluar'");
 $total_keluar = mysqli_fetch_assoc($q_keluar)['total'] ?? 0;
 
-// 4. Saldo Akhir
 $total_pendapatan = $total_spp + $total_masuk_manual;
 $saldo_akhir = $total_pendapatan - $total_keluar;
 
-// --- DATA GURU UNTUK PEMBAYARAN ---
-// Ambil daftar guru dan hitung estimasi honor (50% dari total les yang diajar)
+// --- DATA HONOR GURU ---
 $list_guru = mysqli_query($conn, "
     SELECT u.username, 
     (SELECT SUM(a.nominal_bayar) FROM absensi a 
@@ -122,18 +129,18 @@ $list_guru = mysqli_query($conn, "
                 <h3 class="font-bold text-gray-700 mb-2 flex items-center gap-2">
                     <i class="fas fa-money-check-alt text-purple-500"></i> Bayar Honor Guru
                 </h3>
-                <p class="text-xs text-gray-400 mb-4">Klik 'Bayar' untuk mengisi form otomatis.</p>
+                <p class="text-xs text-gray-400 mb-4">Klik 'Bayar' untuk mengisi form.</p>
                 
                 <div class="space-y-3 max-h-80 overflow-y-auto pr-1">
                     <?php 
-                    mysqli_data_seek($list_guru, 0); // Reset pointer loop
+                    mysqli_data_seek($list_guru, 0); 
                     while($g = mysqli_fetch_assoc($list_guru)): 
                         $honor = $g['hak_honor'] ?? 0;
                     ?>
                     <div class="flex justify-between items-center border-b border-dashed border-gray-200 pb-2">
                         <div>
                             <p class="font-bold text-sm text-gray-800"><?php echo htmlspecialchars($g['username']); ?></p>
-                            <p class="text-[10px] text-gray-500">Estimasi: Rp <?php echo number_format($honor); ?></p>
+                            <p class="text-[10px] text-gray-500">Hak: Rp <?php echo number_format($honor); ?></p>
                         </div>
                         <button onclick="bayarHonor('<?php echo $g['username']; ?>', '<?php echo $honor; ?>')" 
                                 class="bg-purple-50 text-purple-600 hover:bg-purple-600 hover:text-white px-3 py-1.5 rounded-lg text-xs font-bold transition">
@@ -168,12 +175,12 @@ $list_guru = mysqli_query($conn, "
 
                     <div class="md:col-span-2">
                         <label class="text-[10px] font-bold text-gray-400 uppercase">Nama Pelaku (Pemberi/Penerima)</label>
-                        <input type="text" name="nama_pelaku" id="nama_pelaku" placeholder="Contoh: Pak Guru Budi / Toko Musik" class="w-full p-2 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" required>
+                        <input type="text" name="nama_pelaku" id="nama_pelaku" placeholder="Contoh: Pak Budi / Toko Alat Tulis" class="w-full p-2 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" required>
                     </div>
 
                     <div class="md:col-span-2">
                         <label class="text-[10px] font-bold text-gray-400 uppercase">Keterangan</label>
-                        <input type="text" name="keterangan" id="keterangan" placeholder="Contoh: Pembayaran Honor Bulan Mei" class="w-full p-2 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" required>
+                        <input type="text" name="keterangan" id="keterangan" placeholder="Keterangan transaksi..." class="w-full p-2 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" required>
                     </div>
 
                     <div class="md:col-span-2">
@@ -188,8 +195,8 @@ $list_guru = mysqli_query($conn, "
             </div>
 
             <div class="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
-                <div class="p-4 bg-gray-50 border-b border-gray-100 flex justify-between items-center">
-                    <h3 class="font-bold text-gray-700 text-sm">Riwayat Transaksi Terakhir</h3>
+                <div class="p-4 bg-gray-50 border-b border-gray-100">
+                    <h3 class="font-bold text-gray-700 text-sm">Riwayat Transaksi</h3>
                 </div>
                 <div class="overflow-x-auto">
                     <table class="w-full text-sm text-left">
@@ -198,24 +205,23 @@ $list_guru = mysqli_query($conn, "
                                 <th class="p-3 font-semibold">Tgl</th>
                                 <th class="p-3 font-semibold">Nama</th>
                                 <th class="p-3 font-semibold">Ket</th>
-                                <th class="p-3 text-right font-semibold">Masuk</th>
-                                <th class="p-3 text-right font-semibold">Keluar</th>
+                                <th class="p-3 text-right font-semibold">Nominal</th>
                             </tr>
                         </thead>
                         <tbody class="divide-y divide-gray-50">
                             <?php 
                             $riwayat = mysqli_query($conn, "SELECT * FROM keuangan ORDER BY tanggal DESC LIMIT 15");
                             while($r = mysqli_fetch_assoc($riwayat)): 
+                                $is_masuk = ($r['jenis'] == 'masuk');
+                                $warna = $is_masuk ? 'text-green-600' : 'text-red-500';
+                                $tanda = $is_masuk ? '+' : '-';
                             ?>
                             <tr class="hover:bg-blue-50 transition-colors">
                                 <td class="p-3 whitespace-nowrap text-gray-500"><?php echo date('d/m', strtotime($r['tanggal'])); ?></td>
                                 <td class="p-3 font-bold text-gray-700"><?php echo htmlspecialchars($r['nama_pelaku'] ?? '-'); ?></td>
                                 <td class="p-3 text-gray-600"><?php echo htmlspecialchars($r['keterangan']); ?></td>
-                                <td class="p-3 text-right text-green-600 font-bold">
-                                    <?php echo ($r['jenis'] == 'masuk') ? number_format($r['nominal']) : '-'; ?>
-                                </td>
-                                <td class="p-3 text-right text-red-500 font-bold">
-                                    <?php echo ($r['jenis'] == 'keluar') ? number_format($r['nominal']) : '-'; ?>
+                                <td class="p-3 text-right font-bold <?php echo $warna; ?>">
+                                    <?php echo $tanda . ' ' . number_format($r['nominal']); ?>
                                 </td>
                             </tr>
                             <?php endwhile; ?>
@@ -233,11 +239,7 @@ $list_guru = mysqli_query($conn, "
             document.getElementById('keterangan').value = 'Honor Mengajar ' + nama;
             document.getElementById('nominal').value = nominal;
             document.getElementById('jenis_transaksi').value = 'keluar';
-            
-            // Fokus ke nominal biar admin ngecek dulu
             document.getElementById('nominal').focus();
-            
-            // Animasi scroll ke atas form (untuk mobile)
             document.querySelector('form').scrollIntoView({ behavior: 'smooth' });
         }
     </script>
