@@ -92,7 +92,11 @@ $query_users = mysqli_query($conn, "SELECT * FROM users ORDER BY role, username 
                     </span>
                 </td>
                 <td>
-                    <?php if($u['username'] != $_SESSION['username']) { ?>
+                    <?php 
+// Kita gunakan pengecekan yang lebih fleksibel
+$session_user = $_SESSION['username'] ?? $_SESSION['user_login'] ?? '';
+if($u['username'] != $session_user) { 
+?>
                         <a href="users.php?hapus=<?php echo $u['id']; ?>" class="btn-hapus" onclick="return confirm('Hapus user ini?')">Hapus</a>
                     <?php } else { echo "-"; } ?>
                 </td>
