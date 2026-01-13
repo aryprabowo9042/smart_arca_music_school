@@ -6,18 +6,22 @@ require_once(__DIR__ . '/../koneksi.php');
 $is_admin = (isset($_SESSION['role']) && $_SESSION['role'] == 'admin') || (isset($_COOKIE['user_role']) && $_COOKIE['user_role'] == 'admin');
 if (!$is_admin) { header("Location: login.php"); exit(); }
 
+// 1. PROSES INPUT MANUAL ADMIN
 if (isset($_POST['simpan_manual'])) {
     $tgl = $_POST['tanggal'];
     $ket = mysqli_real_escape_string($conn, $_POST['keterangan']);
     $tip = $_POST['jenis'];
     $nom = (int)$_POST['nominal'];
+    // Pastikan kolom di bawah ini bernama 'nominal'
     mysqli_query($conn, "INSERT INTO keuangan (tanggal, keterangan, jenis, nominal) VALUES ('$tgl', '$ket', '$tip', '$nom')");
     header("Location: honor.php");
 }
 
+// 2. HITUNG STATISTIK
 $q_guru = mysqli_fetch_assoc(mysqli_query($conn, "SELECT SUM(nominal_bayar) as total FROM absensi"));
 $omzet_guru = $q_guru['total'] ?? 0;
 
+// Perbaikan Query Baris 21 (Pastikan nama kolom 'nominal' sesuai database)
 $q_manual = mysqli_fetch_assoc(mysqli_query($conn, "SELECT 
     SUM(CASE WHEN jenis='masuk' THEN nominal ELSE 0 END) as masuk,
     SUM(CASE WHEN jenis='keluar' THEN nominal ELSE 0 END) as keluar 
@@ -27,6 +31,7 @@ $keluar_manual = $q_manual['keluar'] ?? 0;
 
 $profit_bersih = ($omzet_guru * 0.5) + $masuk_manual - $keluar_manual;
 
+// 3. QUERY GABUNGAN (UNION)
 $sql_union = "(SELECT tanggal, CONCAT('Laporan Guru (', u.username, ')') as ket, 'masuk' as tipe, nominal_bayar as nom FROM absensi a JOIN jadwal j ON a.id_jadwal = j.id JOIN users u ON j.id_guru = u.id WHERE a.nominal_bayar > 0)
               UNION ALL
               (SELECT tanggal, keterangan as ket, jenis as tipe, nominal as nom FROM keuangan)
@@ -54,23 +59,38 @@ $query_rincian = mysqli_query($conn, $sql_union);
 <div class="container">
     <a href="index.php" style="text-decoration:none; color:#1a73e8; font-weight:bold;">← Kembali</a>
     <h2>Laporan Keuangan</h2>
+    
     <div class="stats">
-        <div style="background:#1a73e8;" class="card"><small>Omzet Les</small><br><strong>Rp <?php echo number_format($omzet_guru); ?></strong></div>
-        <div style="background:#28a745;" class="card"><small>Profit Sekolah</small><br><strong>Rp <?php echo number_format($profit_bersih); ?></strong></div>
-        <div style="background:#dc3545;" class="card"><small>Pengeluaran</small><br><strong>Rp <?php echo number_format($keluar_manual); ?></strong></div>
+        <div class="card" style="background:#1a73e8;"><small>Omzet Guru</small><br><strong>Rp <?php echo number_format($omzet_guru); ?></strong></div>
+        <div class="card" style="background:#28a745;"><small>Profit Sekolah (50% Guru)</small><br><strong>Rp <?php echo number_format($profit_bersih); ?></strong></div>
+        <div class="card" style="background:#dc3545;"><small>Pengeluaran Manual</small><br><strong>Rp <?php echo number_format($keluar_manual); ?></strong></div>
     </div>
+
     <div class="form-box">
-        <h4 style="margin:0 0 10px 0;">+ Input Keuangan Manual</h4>
-        <form method="POST" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px;">
-            <input type="date" name="tanggal" value="<?php echo date('Y-m-d'); ?>" required>
-            <input type="text" name="keterangan" placeholder="Keterangan" required>
-            <select name="jenis"><option value="masuk">Masuk (+)</option><option value="keluar">Keluar (-)</option></select>
-            <input type="number" name="nominal" placeholder="Nominal Rp" required>
-            <button type="submit" name="simpan_manual">SIMPAN</button>
+        <h4 style="margin:0 0 10px 0;">+ Input Keuangan Lainnya</h4>
+        <form method="POST">
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px;">
+                <input type="date" name="tanggal" value="<?php echo date('Y-m-d'); ?>" required>
+                <input type="text" name="keterangan" placeholder="Keterangan" required>
+                <select name="jenis">
+                    <option value="masuk">Pemasukan (+)</option>
+                    <option value="keluar">Pengeluaran (-)</option>
+                </select>
+                <input type="number" name="nominal" placeholder="Nominal Rp" required>
+                <button type="submit" name="simpan_manual">SIMPAN</button>
+            </div>
         </form>
     </div>
+
     <table>
-        <thead><tr style="background: #f8f9fa;"><th>Tanggal</th><th>Keterangan</th><th>Jenis</th><th>Nominal</th></tr></thead>
+        <thead>
+            <tr style="background: #f8f9fa;">
+                <th>Tanggal</th>
+                <th>Keterangan</th>
+                <th>Jenis</th>
+                <th>Nominal</th>
+            </tr>
+        </thead>
         <tbody>
             <?php while($row = mysqli_fetch_assoc($query_rincian)) { ?>
             <tr>
