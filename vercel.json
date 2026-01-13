@@ -1,13 +1,25 @@
 {
   "functions": {
-    "api/**/*.php": { "runtime": "vercel-php@0.7.1" }
+    "api/**/*.php": {
+      "runtime": "vercel-php@0.7.2"
+    }
   },
   "routes": [
-    { "src": "/", "dest": "/api/admin/login.php" },
-    { "src": "/login", "dest": "/api/admin/login.php" },
-    { "src": "/logout", "dest": "/api/logout.php" },
-    { "src": "/admin/(.*)", "dest": "/api/admin/$1" },
-    { "src": "/guru/(.*)", "dest": "/api/guru/$1" },
-    { "src": "/murid/(.*)", "dest": "/api/murid/$1" }
+    {
+      "src": "/api/admin/(.*)",
+      "dest": "/api/admin/$1"
+    },
+    {
+      "src": "/api/guru/(.*)",
+      "dest": "/api/guru/$1"
+    },
+    {
+      "src": "/api/murid/(.*)",
+      "dest": "/api/murid/$1"
+    },
+    {
+      "src": "/(.*)",
+      "dest": "/api/$1"
+    }
   ]
 }
