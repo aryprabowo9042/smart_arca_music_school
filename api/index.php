@@ -1,125 +1,95 @@
 <?php
-// api/murid/index.php
+session_start();
 
-// 1. LOGIKA LOGOUT
-if (isset($_GET['action']) && $_GET['action'] == 'logout') {
-    setcookie('user_role', '', time() - 3600, '/');
-    setcookie('user_id', '', time() - 3600, '/');
-    setcookie('user_username', '', time() - 3600, '/');
-    header("Location: ../admin/login.php");
-    exit();
+// Jika sudah login, arahkan otomatis ke dashboard masing-masing
+if (isset($_SESSION['role'])) {
+    if ($_SESSION['role'] == 'admin') { header("Location: admin/index.php"); exit(); }
+    if ($_SESSION['role'] == 'guru') { header("Location: guru/index.php"); exit(); }
+    if ($_SESSION['role'] == 'murid') { header("Location: murid/index.php"); exit(); }
 }
-
-// 2. CEK LOGIN (PAKAI COOKIE)
-// Jika tidak ada cookie 'murid', lempar ke login
-if (!isset($_COOKIE['user_role']) || $_COOKIE['user_role'] != 'murid') {
-    header("Location: ../admin/login.php");
-    exit();
-}
-
-require_once(__DIR__ . '/../koneksi.php');
-
-// 3. AMBIL DATA MURID DARI COOKIE
-$id_murid = $_COOKIE['user_id'];
-$username = $_COOKIE['user_username'] ?? 'Siswa';
-
-// 4. QUERY RIWAYAT LES
-// Mengambil data absensi, jadwal, dan guru
-$sql = "SELECT a.*, j.alat_musik, g.username as nama_guru 
-        FROM absensi a 
-        JOIN jadwal j ON a.id_jadwal = j.id 
-        JOIN users g ON j.id_guru = g.id 
-        WHERE j.id_murid = '$id_murid' 
-        ORDER BY a.tanggal DESC";
-
-$query = mysqli_query($conn, $sql);
 ?>
 <!DOCTYPE html>
 <html lang="id">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Portal Siswa - Smart Arca</title>
+    <title>Smart Arca Music School</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap');
+        body { font-family: 'Poppins', sans-serif; }
+        .glass-effect {
+            background: rgba(255, 255, 255, 0.9);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+    </style>
 </head>
-<body class="bg-blue-50 min-h-screen pb-10">
+<body class="bg-gradient-to-br from-blue-600 via-blue-700 to-indigo-900 min-h-screen flex items-center justify-center p-6">
 
-    <div class="bg-blue-600 text-white p-6 rounded-b-[30px] shadow-lg mb-6 relative">
-        <div class="flex justify-between items-start">
+    <div class="max-w-4xl w-full grid md:grid-cols-2 gap-8 items-center">
+        
+        <div class="text-white space-y-6">
+            <div class="w-20 h-20 bg-white text-blue-600 rounded-2xl flex items-center justify-center text-3xl font-bold shadow-2xl transform -rotate-12">
+                SA
+            </div>
             <div>
-                <p class="text-blue-200 text-xs uppercase tracking-wider mb-1">Selamat Datang,</p>
-                <h1 class="text-2xl font-bold"><?php echo htmlspecialchars($username); ?> 👋</h1>
+                <h1 class="text-4xl md:text-5xl font-bold leading-tight">Smart Arca <br><span class="text-blue-300">Music School</span></h1>
+                <p class="mt-4 text-blue-100 text-lg">Sistem Informasi Akademik & Manajemen Keuangan Kursus Musik Profesional.</p>
             </div>
-            <a href="index.php?action=logout" class="bg-white/20 hover:bg-white/30 p-2 rounded-lg transition text-sm font-medium backdrop-blur-sm">
-                <i class="fas fa-sign-out-alt"></i> Keluar
-            </a>
-        </div>
-        
-        <div class="mt-6 flex gap-4">
-            <div class="bg-white/10 px-4 py-2 rounded-xl backdrop-blur-md border border-white/20">
-                <span class="block text-xs text-blue-100">Total Pertemuan</span>
-                <span class="font-bold text-lg"><?php echo mysqli_num_rows($query); ?></span>
+            <div class="flex gap-4 text-sm text-blue-200">
+                <span class="flex items-center gap-2"><i class="fas fa-check-circle"></i> Monitoring Absensi</span>
+                <span class="flex items-center gap-2"><i class="fas fa-check-circle"></i> Kuitansi Digital</span>
             </div>
         </div>
-    </div>
 
-    <div class="max-w-md mx-auto px-4">
-        <h3 class="font-bold text-gray-700 mb-4 text-lg border-l-4 border-blue-600 pl-3">Riwayat & Pembayaran</h3>
-
-        <?php if(mysqli_num_rows($query) > 0): ?>
-            <div class="space-y-4">
-                <?php while($row = mysqli_fetch_assoc($query)) { ?>
-                <div class="bg-white p-5 rounded-2xl shadow-sm border border-blue-50 hover:shadow-md transition">
-                    
-                    <div class="flex justify-between items-center mb-3">
-                        <span class="bg-blue-100 text-blue-700 text-[10px] font-bold px-2 py-1 rounded uppercase tracking-wider">
-                            <?php echo $row['alat_musik']; ?>
-                        </span>
-                        <span class="text-xs text-gray-400 font-medium">
-                            <?php echo date('d M Y', strtotime($row['tanggal'])); ?>
-                        </span>
-                    </div>
-
-                    <div class="mb-4">
-                        <div class="flex items-center gap-2 text-gray-600 text-sm mb-1">
-                            <i class="fas fa-chalkboard-teacher w-5 text-center text-blue-400"></i>
-                            <span><?php echo $row['nama_guru']; ?></span>
-                        </div>
-                        <div class="flex items-start gap-2 text-gray-600 text-sm">
-                            <i class="fas fa-book-open w-5 text-center text-blue-400 mt-1"></i>
-                            <span class="line-clamp-2"><?php echo $row['materi_ajar']; ?></span>
-                        </div>
-                    </div>
-
-                    <div class="border-t border-gray-100 my-3"></div>
-
-                    <div class="flex justify-between items-center">
-                        <div>
-                            <p class="text-[10px] text-gray-400">Biaya Les</p>
-                            <p class="text-green-600 font-bold text-lg">Rp <?php echo number_format($row['nominal_bayar'], 0, ',', '.'); ?></p>
-                        </div>
-                        
-                        <a href="../cetak_kuitansi.php?id=<?php echo $row['id']; ?>" target="_blank" class="bg-blue-600 text-white px-4 py-2 rounded-xl text-xs font-bold shadow-lg shadow-blue-200 hover:bg-blue-700 transition flex items-center gap-2">
-                            <i class="fas fa-print"></i> KUITANSI
-                        </a>
-                    </div>
-                </div>
-                <?php } ?>
+        <div class="glass-effect p-8 rounded-3xl shadow-2xl space-y-6">
+            <div class="text-center">
+                <h2 class="text-2xl font-bold text-gray-800">Selamat Datang</h2>
+                <p class="text-gray-500 text-sm">Pilih akses masuk sesuai peran Anda</p>
             </div>
-        <?php else: ?>
-            <div class="bg-white p-10 rounded-2xl text-center shadow-sm">
-                <div class="bg-gray-100 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4 text-gray-400 text-2xl">
-                    <i class="fas fa-music"></i>
-                </div>
-                <h4 class="font-bold text-gray-600">Belum Ada Data</h4>
-                <p class="text-xs text-gray-400 mt-1">Riwayat les Anda akan muncul di sini setelah guru melakukan absensi.</p>
+
+            <div class="grid gap-4">
+                <a href="admin/login.php" class="group flex items-center gap-4 p-4 rounded-2xl border-2 border-transparent bg-blue-50 hover:bg-blue-600 hover:text-white transition-all duration-300 shadow-sm hover:shadow-lg">
+                    <div class="w-12 h-12 rounded-xl bg-blue-600 text-white flex items-center justify-center group-hover:bg-white group-hover:text-blue-600 transition-colors">
+                        <i class="fas fa-user-graduate text-xl"></i>
+                    </div>
+                    <div class="flex-1">
+                        <h3 class="font-semibold text-lg">Portal Siswa</h3>
+                        <p class="text-xs opacity-70 group-hover:text-blue-100 transition-colors">Cek jadwal & cetak kuitansi les</p>
+                    </div>
+                    <i class="fas fa-chevron-right text-gray-400 group-hover:text-white"></i>
+                </a>
+
+                <a href="admin/login.php" class="group flex items-center gap-4 p-4 rounded-2xl border-2 border-transparent bg-indigo-50 hover:bg-indigo-600 hover:text-white transition-all duration-300 shadow-sm hover:shadow-lg">
+                    <div class="w-12 h-12 rounded-xl bg-indigo-600 text-white flex items-center justify-center group-hover:bg-white group-hover:text-indigo-600 transition-colors">
+                        <i class="fas fa-chalkboard-teacher text-xl"></i>
+                    </div>
+                    <div class="flex-1">
+                        <h3 class="font-semibold text-lg">Portal Guru</h3>
+                        <p class="text-xs opacity-70 group-hover:text-indigo-100 transition-colors">Lapor absensi & cek honor</p>
+                    </div>
+                    <i class="fas fa-chevron-right text-gray-400 group-hover:text-white"></i>
+                </a>
+
+                <a href="admin/login.php" class="group flex items-center gap-4 p-4 rounded-2xl border-2 border-transparent bg-gray-50 hover:bg-gray-800 hover:text-white transition-all duration-300 shadow-sm hover:shadow-lg">
+                    <div class="w-12 h-12 rounded-xl bg-gray-800 text-white flex items-center justify-center group-hover:bg-white group-hover:text-gray-800 transition-colors">
+                        <i class="fas fa-user-shield text-xl"></i>
+                    </div>
+                    <div class="flex-1">
+                        <h3 class="font-semibold text-lg">Administrator</h3>
+                        <p class="text-xs opacity-70 group-hover:text-gray-300 transition-colors">Kelola jadwal, user, & keuangan</p>
+                    </div>
+                    <i class="fas fa-chevron-right text-gray-400 group-hover:text-white"></i>
+                </a>
             </div>
-        <?php endif; ?>
-        
-        <div class="mt-10 text-center">
-            <p class="text-[10px] text-gray-300 uppercase">Smart Arca Music School App</p>
+
+            <div class="pt-4 border-t border-gray-100 text-center">
+                <p class="text-xs text-gray-400 uppercase tracking-widest">&copy; 2026 Smart Arca Music School</p>
+            </div>
         </div>
+
     </div>
 
 </body>
