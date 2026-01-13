@@ -1,61 +1,95 @@
 <?php
 session_start();
-ob_start();
 require_once(__DIR__ . '/../koneksi.php');
 
+// Jika sudah login, lempar ke dashboard yang sesuai
+if (isset($_SESSION['role'])) {
+    if ($_SESSION['role'] == 'admin') { header("Location: index.php"); exit(); }
+    if ($_SESSION['role'] == 'guru') { header("Location: ../guru/index.php"); exit(); }
+    if ($_SESSION['role'] == 'murid') { header("Location: ../murid/index.php"); exit(); }
+}
+
+$error = '';
 if (isset($_POST['login'])) {
     $username = mysqli_real_escape_string($conn, $_POST['username']);
-    $password = $_POST['password']; 
+    $password = $_POST['password'];
 
-    $query = mysqli_query($conn, "SELECT * FROM users WHERE username='$username' AND password='$password' LIMIT 1");
-    
-    if ($query && mysqli_num_rows($query) > 0) {
-        $data = mysqli_fetch_assoc($query);
-        
-        // Simpan ke Session
-        $_SESSION['status']   = "login";
-        $_SESSION['username'] = $data['username'];
-        $_SESSION['role']     = $data['role'];
+    $query = mysqli_query($conn, "SELECT * FROM users WHERE username = '$username'");
+    if (mysqli_num_rows($query) === 1) {
+        $user = mysqli_fetch_assoc($query);
+        if (password_verify($password, $user['password'])) {
+            // Set Session
+            $_SESSION['id'] = $user['id'];
+            $_SESSION['username'] = $user['username'];
+            $_SESSION['role'] = $user['role'];
 
-        // Simpan ke Cookie selama 1 jam (Cadangan untuk Vercel)
-        setcookie("user_login", $data['username'], time() + 3600, "/");
-        setcookie("user_role", $data['role'], time() + 3600, "/");
-
-        // Redirect menggunakan JavaScript agar lebih stabil
-        if ($data['role'] == "admin") {
-            echo "<script>window.location.replace('index.php');</script>";
-        } elseif ($data['role'] == "guru") {
-            echo "<script>window.location.replace('../guru/index.php');</script>";
+            // REDIRECT BERDASARKAN ROLE (Kunci Utama)
+            if ($user['role'] == 'admin') {
+                header("Location: index.php");
+            } elseif ($user['role'] == 'guru') {
+                header("Location: ../guru/index.php");
+            } elseif ($user['role'] == 'murid') {
+                header("Location: ../murid/index.php");
+            }
+            exit();
         } else {
-            echo "<script>window.location.replace('../murid/index.php');</script>";
+            $error = 'Password salah!';
         }
-        exit();
     } else {
-        echo "<script>alert('Login Gagal! Akun tidak ditemukan di TiDB.'); window.location.replace('login.php');</script>";
+        $error = 'Username tidak ditemukan!';
     }
 }
 ?>
 <!DOCTYPE html>
-<html>
+<html lang="id">
 <head>
+    <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Login Smart Arca</title>
-    <style>
-        body { font-family: sans-serif; background: #1a73e8; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; }
-        .box { background: white; padding: 30px; border-radius: 15px; width: 280px; text-align: center; box-shadow: 0 10px 25px rgba(0,0,0,0.2); }
-        input { width: 100%; padding: 12px; margin: 10px 0; border: 1px solid #ddd; border-radius: 8px; box-sizing: border-box; }
-        button { width: 100%; padding: 12px; background: #0d47a1; color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: bold; }
-    </style>
+    <title>Login - Smart Arca</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
 </head>
-<body>
-    <div class="box">
-        <h2 style="color:#1a73e8; margin-bottom:0;">SMART ARCA</h2>
-        <p style="font-size:12px; color:#666; margin-top:5px;">Silakan Masuk</p>
-        <form method="POST">
-            <input type="text" name="username" placeholder="Username" required>
-            <input type="password" name="password" placeholder="Password" required>
-            <button type="submit" name="login">MASUK</button>
+<body class="bg-slate-100 min-h-screen flex items-center justify-center p-4">
+
+    <div class="max-w-md w-full bg-white rounded-3xl shadow-xl overflow-hidden">
+        <div class="bg-blue-600 p-8 text-white text-center">
+            <div class="w-16 h-16 bg-white text-blue-600 rounded-2xl flex items-center justify-center text-2xl font-bold mx-auto mb-4 shadow-lg">SA</div>
+            <h2 class="text-2xl font-bold">Portal Smart Arca</h2>
+            <p class="text-blue-100 text-sm opacity-80 mt-1">Silakan masuk untuk melanjutkan</p>
+        </div>
+
+        <form method="POST" class="p-8 space-y-5">
+            <?php if($error): ?>
+                <div class="bg-red-50 text-red-500 p-3 rounded-xl text-sm border border-red-100 flex items-center gap-2">
+                    <i class="fas fa-exclamation-circle"></i> <?php echo $error; ?>
+                </div>
+            <?php endif; ?>
+
+            <div>
+                <label class="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-1 ml-1">Username</label>
+                <div class="relative">
+                    <i class="fas fa-user absolute left-4 top-1/2 -translate-y-1/2 text-gray-300"></i>
+                    <input type="text" name="username" class="w-full pl-12 pr-4 py-3 bg-gray-50 border border-gray-100 rounded-xl focus:ring-2 focus:ring-blue-500 focus:bg-white transition-all outline-none" placeholder="Masukkan username" required>
+                </div>
+            </div>
+
+            <div>
+                <label class="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-1 ml-1">Password</label>
+                <div class="relative">
+                    <i class="fas fa-lock absolute left-4 top-1/2 -translate-y-1/2 text-gray-300"></i>
+                    <input type="password" name="password" class="w-full pl-12 pr-4 py-3 bg-gray-50 border border-gray-100 rounded-xl focus:ring-2 focus:ring-blue-500 focus:bg-white transition-all outline-none" placeholder="••••••••" required>
+                </div>
+            </div>
+
+            <button type="submit" name="login" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-4 rounded-xl shadow-lg shadow-blue-200 transition-all active:scale-95">
+                MASUK SEKARANG
+            </button>
+            
+            <p class="text-center text-gray-400 text-xs mt-4">
+                Lupa password? Hubungi Admin Sekolah.
+            </p>
         </form>
     </div>
+
 </body>
 </html>
