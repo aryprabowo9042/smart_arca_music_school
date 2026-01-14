@@ -1,5 +1,16 @@
 <?php
-// Cek Login (Cookie Mode)
+// 1. LOGIKA LOGOUT
+if (isset($_GET['action']) && $_GET['action'] == 'logout') {
+    setcookie('user_role', '', time() - 3600, '/');
+    setcookie('user_id', '', time() - 3600, '/');
+    setcookie('user_username', '', time() - 3600, '/');
+    
+    // Arahkan ke Landing Page
+    header("Location: ../../index.php");
+    exit();
+}
+
+// 2. CEK LOGIN
 if (!isset($_COOKIE['user_role']) || $_COOKIE['user_role'] != 'guru') {
     header("Location: ../admin/login.php");
     exit();
@@ -10,7 +21,7 @@ require_once(__DIR__ . '/../koneksi.php');
 $id_guru = $_COOKIE['user_id'];
 $nama_guru = $_COOKIE['user_username'] ?? 'Guru';
 
-// 1. TENTUKAN HARI INI (Bahasa Indonesia)
+// TENTUKAN HARI INI
 $hari_inggris = date('l');
 $map_hari = [
     'Sunday' => 'Minggu', 'Monday' => 'Senin', 'Tuesday' => 'Selasa', 
@@ -18,7 +29,7 @@ $map_hari = [
 ];
 $hari_ini = $map_hari[$hari_inggris];
 
-// 2. AMBIL JADWAL HARI INI
+// AMBIL JADWAL
 $q_jadwal = mysqli_query($conn, "
     SELECT j.*, m.username as nama_murid 
     FROM jadwal j 
@@ -27,8 +38,7 @@ $q_jadwal = mysqli_query($conn, "
     ORDER BY j.jam ASC
 ");
 
-// 3. HITUNG SALDO HONOR (PENTING!)
-// a. Total Hak (50% dari total omzet kelas dia)
+// HITUNG HONOR
 $q_hak = mysqli_query($conn, "
     SELECT SUM(a.nominal_bayar) * 0.5 as total_hak
     FROM absensi a
@@ -37,7 +47,6 @@ $q_hak = mysqli_query($conn, "
 ");
 $total_hak = mysqli_fetch_assoc($q_hak)['total_hak'] ?? 0;
 
-// b. Total Honor yang SUDAH Diterima (Dari tabel keuangan admin)
 $q_terima = mysqli_query($conn, "
     SELECT SUM(nominal) as total_terima 
     FROM keuangan 
@@ -45,10 +54,9 @@ $q_terima = mysqli_query($conn, "
 ");
 $total_terima = mysqli_fetch_assoc($q_terima)['total_terima'] ?? 0;
 
-// c. Sisa Saldo yang Belum Dibayar Admin
 $saldo_belum_cair = $total_hak - $total_terima;
 
-// 4. RIWAYAT PENERIMAAN HONOR TERAKHIR
+// RIWAYAT TERIMA HONOR
 $q_riwayat_honor = mysqli_query($conn, "
     SELECT * FROM keuangan 
     WHERE nama_pelaku = '$nama_guru' AND jenis = 'keluar' 
@@ -72,7 +80,7 @@ $q_riwayat_honor = mysqli_query($conn, "
                 <p class="text-indigo-200 text-xs">Selamat Mengajar,</p>
                 <h1 class="text-2xl font-bold"><?php echo htmlspecialchars($nama_guru); ?></h1>
             </div>
-            <a href="index.php?action=logout" onclick="document.cookie='user_role=; path=/;'; window.location='../admin/login.php';" class="bg-white/20 p-2 rounded-lg text-sm hover:bg-white/30 transition">
+            <a href="index.php?action=logout" class="bg-white/20 p-2 rounded-lg text-sm hover:bg-white/30 transition">
                 <i class="fas fa-sign-out-alt"></i>
             </a>
         </div>
@@ -89,10 +97,10 @@ $q_riwayat_honor = mysqli_query($conn, "
     </div>
 
     <div class="max-w-md mx-auto px-4 space-y-6">
-
+        
         <div>
             <div class="flex justify-between items-center mb-3">
-                <h3 class="font-bold text-gray-700 border-l-4 border-indigo-600 pl-3">Jadwal Hari Ini (<?php echo $hari_ini; ?>)</h3>
+                <h3 class="font-bold text-gray-700 border-l-4 border-indigo-600 pl-3">Jadwal <?php echo $hari_ini; ?></h3>
                 <span class="text-xs bg-gray-200 px-2 py-1 rounded text-gray-600"><?php echo date('d M Y'); ?></span>
             </div>
 
@@ -104,8 +112,8 @@ $q_riwayat_honor = mysqli_query($conn, "
                             <h4 class="font-bold text-gray-800"><?php echo $j['nama_murid']; ?></h4>
                             <p class="text-xs text-gray-500 mb-1"><?php echo $j['alat_musik']; ?> • <?php echo $j['jam']; ?></p>
                         </div>
-                        <a href="absen.php?id_jadwal=<?php echo $j['id']; ?>" class="bg-indigo-600 text-white px-4 py-2 rounded-lg text-xs font-bold shadow-lg shadow-indigo-200 hover:bg-indigo-700 transition">
-                            INPUT ABSEN
+                        <a href="absen.php?id_jadwal=<?php echo $j['id']; ?>" class="bg-indigo-600 text-white px-4 py-2 rounded-lg text-xs font-bold shadow-lg hover:bg-indigo-700 transition">
+                            INPUT
                         </a>
                     </div>
                     <?php endwhile; ?>
@@ -118,7 +126,7 @@ $q_riwayat_honor = mysqli_query($conn, "
         </div>
 
         <div>
-            <h3 class="font-bold text-gray-700 border-l-4 border-green-500 pl-3 mb-3">Riwayat Terima Honor</h3>
+            <h3 class="font-bold text-gray-700 border-l-4 border-green-500 pl-3 mb-3">Pencairan Terakhir</h3>
             <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
                 <?php if(mysqli_num_rows($q_riwayat_honor) > 0): ?>
                     <ul class="divide-y divide-gray-100">
@@ -126,19 +134,18 @@ $q_riwayat_honor = mysqli_query($conn, "
                         <li class="p-4 flex justify-between items-center">
                             <div>
                                 <p class="text-xs text-gray-400"><?php echo date('d M Y', strtotime($h['tanggal'])); ?></p>
-                                <p class="text-xs font-bold text-gray-600 line-clamp-1"><?php echo $h['keterangan']; ?></p>
+                                <p class="text-xs font-bold text-gray-600"><?php echo $h['keterangan']; ?></p>
                             </div>
-                            <span class="text-green-600 font-bold text-sm">+ Rp <?php echo number_format($h['nominal']); ?></span>
+                            <span class="text-green-600 font-bold text-sm">+ <?php echo number_format($h['nominal']); ?></span>
                         </li>
                         <?php endwhile; ?>
                     </ul>
                 <?php else: ?>
-                    <div class="p-4 text-center text-xs text-gray-400">Belum ada riwayat pencairan honor.</div>
+                    <div class="p-4 text-center text-xs text-gray-400">Belum ada data pencairan.</div>
                 <?php endif; ?>
             </div>
         </div>
 
     </div>
-
 </body>
 </html>
