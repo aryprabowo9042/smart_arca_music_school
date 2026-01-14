@@ -11,43 +11,53 @@ if (!isset($_COOKIE['user_role']) || $_COOKIE['user_role'] != 'admin') {
 require_once(__DIR__ . '/../koneksi.php');
 
 // ==========================================
-// 🛠️ FITUR AUTO-REPAIR DATABASE (ANTI-ERROR)
+// 1. PROSES HAPUS DATA
 // ==========================================
-// 1. Cek & Tambah Kolom 'nama_pelaku' jika belum ada
-$cek_nama = mysqli_query($conn, "SHOW COLUMNS FROM keuangan LIKE 'nama_pelaku'");
-if (mysqli_num_rows($cek_nama) == 0) {
-    mysqli_query($conn, "ALTER TABLE keuangan ADD COLUMN nama_pelaku VARCHAR(100) AFTER tanggal");
+if (isset($_GET['hapus'])) {
+    $id = $_GET['hapus'];
+    $del = mysqli_query($conn, "DELETE FROM keuangan WHERE id = '$id'");
+    if ($del) {
+        header("Location: honor.php"); // Refresh bersih
+        exit();
+    }
 }
 
-// 2. Perbaiki Kolom 'jumlah' (Penyebab Error Fatal Bapak Tadi)
-// Kita ubah agar kolom 'jumlah' memiliki nilai default 1, jadi tidak error walau tidak diisi
-$cek_jumlah = mysqli_query($conn, "SHOW COLUMNS FROM keuangan LIKE 'jumlah'");
-if (mysqli_num_rows($cek_jumlah) > 0) {
-    // Ubah jadi ada default 1
-    mysqli_query($conn, "ALTER TABLE keuangan MODIFY COLUMN jumlah INT DEFAULT 1");
-} else {
-    // Jika tidak ada, buat saja biar aman (opsional, untuk konsistensi)
-    mysqli_query($conn, "ALTER TABLE keuangan ADD COLUMN jumlah INT DEFAULT 1 AFTER nominal");
+// ==========================================
+// 2. PROSES AMBIL DATA EDIT
+// ==========================================
+$edit_data = null;
+if (isset($_GET['edit'])) {
+    $id = $_GET['edit'];
+    $q_edit = mysqli_query($conn, "SELECT * FROM keuangan WHERE id = '$id'");
+    if (mysqli_num_rows($q_edit) > 0) {
+        $edit_data = mysqli_fetch_assoc($q_edit);
+    }
 }
 
-// 3. Perlebar kolom 'jenis'
-mysqli_query($conn, "ALTER TABLE keuangan MODIFY COLUMN jenis VARCHAR(50)");
 // ==========================================
-
-
-// --- PROSES SIMPAN TRANSAKSI ---
+// 3. PROSES SIMPAN (BARU / UPDATE)
+// ==========================================
 if (isset($_POST['simpan_transaksi'])) {
+    $id_edit = $_POST['id_edit']; // ID Transaksi (Kosong = Baru, Ada Isi = Update)
+    
     $tgl  = $_POST['tanggal'];
     $nama = mysqli_real_escape_string($conn, $_POST['nama_pelaku']); 
     $ket  = mysqli_real_escape_string($conn, $_POST['keterangan']);
     $tip  = $_POST['jenis']; 
     $nom  = (int)$_POST['nominal'];
     
-    // Kita isi juga kolom 'jumlah' dengan angka 1 agar error hilang total
-    $sql_insert = "INSERT INTO keuangan (tanggal, nama_pelaku, keterangan, jenis, nominal, jumlah) 
-                   VALUES ('$tgl', '$nama', '$ket', '$tip', '$nom', 1)";
+    if (!empty($id_edit)) {
+        // --- LOGIKA UPDATE ---
+        $sql = "UPDATE keuangan SET 
+                tanggal='$tgl', nama_pelaku='$nama', keterangan='$ket', jenis='$tip', nominal='$nom' 
+                WHERE id='$id_edit'";
+    } else {
+        // --- LOGIKA INSERT BARU ---
+        $sql = "INSERT INTO keuangan (tanggal, nama_pelaku, keterangan, jenis, nominal, jumlah) 
+                VALUES ('$tgl', '$nama', '$ket', '$tip', '$nom', 1)";
+    }
     
-    if (mysqli_query($conn, $sql_insert)) {
+    if (mysqli_query($conn, $sql)) {
         header("Location: honor.php"); 
         exit();
     } else {
@@ -102,7 +112,6 @@ $list_guru = mysqli_query($conn, "
     <div class="max-w-6xl mx-auto px-4 grid grid-cols-1 md:grid-cols-3 gap-6">
         
         <div class="space-y-6">
-            
             <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
                 <h3 class="font-bold text-gray-700 border-b pb-3 mb-3">Ringkasan Kas</h3>
                 <div class="space-y-3 text-sm">
@@ -129,8 +138,6 @@ $list_guru = mysqli_query($conn, "
                 <h3 class="font-bold text-gray-700 mb-2 flex items-center gap-2">
                     <i class="fas fa-money-check-alt text-purple-500"></i> Bayar Honor Guru
                 </h3>
-                <p class="text-xs text-gray-400 mb-4">Klik 'Bayar' untuk mengisi form.</p>
-                
                 <div class="space-y-3 max-h-80 overflow-y-auto pr-1">
                     <?php 
                     mysqli_data_seek($list_guru, 0); 
@@ -140,7 +147,7 @@ $list_guru = mysqli_query($conn, "
                     <div class="flex justify-between items-center border-b border-dashed border-gray-200 pb-2">
                         <div>
                             <p class="font-bold text-sm text-gray-800"><?php echo htmlspecialchars($g['username']); ?></p>
-                            <p class="text-[10px] text-gray-500">Hak: Rp <?php echo number_format($honor); ?></p>
+                            <p class="text-[10px] text-gray-500">Estimasi: Rp <?php echo number_format($honor); ?></p>
                         </div>
                         <button onclick="bayarHonor('<?php echo $g['username']; ?>', '<?php echo $honor; ?>')" 
                                 class="bg-purple-50 text-purple-600 hover:bg-purple-600 hover:text-white px-3 py-1.5 rounded-lg text-xs font-bold transition">
@@ -154,43 +161,54 @@ $list_guru = mysqli_query($conn, "
 
         <div class="md:col-span-2 space-y-6">
 
-            <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 relative overflow-hidden">
-                <div class="absolute top-0 right-0 bg-blue-50 px-4 py-2 rounded-bl-2xl text-xs font-bold text-blue-600">
-                    Input Transaksi
+            <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 relative overflow-hidden" id="formArea">
+                <div class="absolute top-0 right-0 bg-<?php echo $edit_data ? 'orange' : 'blue'; ?>-50 px-4 py-2 rounded-bl-2xl text-xs font-bold text-<?php echo $edit_data ? 'orange' : 'blue'; ?>-600">
+                    <?php echo $edit_data ? 'MODE EDIT DATA' : 'INPUT TRANSAKSI BARU'; ?>
                 </div>
+                
                 <form method="POST" class="grid grid-cols-1 md:grid-cols-2 gap-4 mt-2">
-                    
+                    <input type="hidden" name="id_edit" value="<?php echo $edit_data['id'] ?? ''; ?>">
+
                     <div>
                         <label class="text-[10px] font-bold text-gray-400 uppercase">Tanggal</label>
-                        <input type="date" name="tanggal" value="<?php echo date('Y-m-d'); ?>" class="w-full p-2 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none bg-gray-50" required>
+                        <input type="date" name="tanggal" value="<?php echo $edit_data['tanggal'] ?? date('Y-m-d'); ?>" class="w-full p-2 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none bg-gray-50" required>
                     </div>
 
                     <div>
                         <label class="text-[10px] font-bold text-gray-400 uppercase">Jenis</label>
                         <select name="jenis" id="jenis_transaksi" class="w-full p-2 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none bg-gray-50">
-                            <option value="keluar">🔴 Pengeluaran</option>
-                            <option value="masuk">🟢 Pemasukan</option>
+                            <option value="keluar" <?php echo ($edit_data && $edit_data['jenis'] == 'keluar') ? 'selected' : ''; ?>>🔴 Pengeluaran</option>
+                            <option value="masuk" <?php echo ($edit_data && $edit_data['jenis'] == 'masuk') ? 'selected' : ''; ?>>🟢 Pemasukan</option>
                         </select>
                     </div>
 
                     <div class="md:col-span-2">
-                        <label class="text-[10px] font-bold text-gray-400 uppercase">Nama Pelaku (Pemberi/Penerima)</label>
-                        <input type="text" name="nama_pelaku" id="nama_pelaku" placeholder="Contoh: Pak Budi / Toko Alat Tulis" class="w-full p-2 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" required>
+                        <label class="text-[10px] font-bold text-gray-400 uppercase">Nama Pelaku</label>
+                        <input type="text" name="nama_pelaku" id="nama_pelaku" value="<?php echo htmlspecialchars($edit_data['nama_pelaku'] ?? ''); ?>" placeholder="Contoh: Pak Budi / Toko Alat Tulis" class="w-full p-2 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" required>
                     </div>
 
                     <div class="md:col-span-2">
                         <label class="text-[10px] font-bold text-gray-400 uppercase">Keterangan</label>
-                        <input type="text" name="keterangan" id="keterangan" placeholder="Keterangan transaksi..." class="w-full p-2 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" required>
+                        <input type="text" name="keterangan" id="keterangan" value="<?php echo htmlspecialchars($edit_data['keterangan'] ?? ''); ?>" placeholder="Keterangan transaksi..." class="w-full p-2 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" required>
                     </div>
 
                     <div class="md:col-span-2">
                         <label class="text-[10px] font-bold text-gray-400 uppercase">Nominal (Rp)</label>
-                        <input type="number" name="nominal" id="nominal" placeholder="0" class="w-full p-3 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none font-bold text-xl text-gray-700" required>
+                        <input type="number" name="nominal" id="nominal" value="<?php echo $edit_data['nominal'] ?? ''; ?>" placeholder="0" class="w-full p-3 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none font-bold text-xl text-gray-700" required>
                     </div>
 
-                    <button type="submit" name="simpan_transaksi" class="md:col-span-2 bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 rounded-xl transition shadow-lg shadow-blue-100">
-                        SIMPAN TRANSAKSI
-                    </button>
+                    <?php if($edit_data): ?>
+                         <div class="md:col-span-2 flex gap-2">
+                            <button type="submit" name="simpan_transaksi" class="flex-1 bg-orange-500 hover:bg-orange-600 text-white font-bold py-3 rounded-xl transition">
+                                <i class="fas fa-save mr-1"></i> UPDATE DATA
+                            </button>
+                            <a href="honor.php" class="bg-gray-200 text-gray-600 px-4 py-3 rounded-xl font-bold hover:bg-gray-300">Batal</a>
+                        </div>
+                    <?php else: ?>
+                        <button type="submit" name="simpan_transaksi" class="md:col-span-2 bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 rounded-xl transition shadow-lg shadow-blue-100">
+                            <i class="fas fa-plus-circle mr-1"></i> SIMPAN TRANSAKSI
+                        </button>
+                    <?php endif; ?>
                 </form>
             </div>
 
@@ -203,25 +221,35 @@ $list_guru = mysqli_query($conn, "
                         <thead class="bg-white text-gray-400 text-xs uppercase border-b">
                             <tr>
                                 <th class="p-3 font-semibold">Tgl</th>
-                                <th class="p-3 font-semibold">Nama</th>
                                 <th class="p-3 font-semibold">Ket</th>
                                 <th class="p-3 text-right font-semibold">Nominal</th>
+                                <th class="p-3 text-center font-semibold">Aksi</th>
                             </tr>
                         </thead>
                         <tbody class="divide-y divide-gray-50">
                             <?php 
-                            $riwayat = mysqli_query($conn, "SELECT * FROM keuangan ORDER BY tanggal DESC LIMIT 15");
+                            $riwayat = mysqli_query($conn, "SELECT * FROM keuangan ORDER BY tanggal DESC LIMIT 20");
                             while($r = mysqli_fetch_assoc($riwayat)): 
                                 $is_masuk = ($r['jenis'] == 'masuk');
                                 $warna = $is_masuk ? 'text-green-600' : 'text-red-500';
                                 $tanda = $is_masuk ? '+' : '-';
                             ?>
                             <tr class="hover:bg-blue-50 transition-colors">
-                                <td class="p-3 whitespace-nowrap text-gray-500"><?php echo date('d/m', strtotime($r['tanggal'])); ?></td>
-                                <td class="p-3 font-bold text-gray-700"><?php echo htmlspecialchars($r['nama_pelaku'] ?? '-'); ?></td>
+                                <td class="p-3 whitespace-nowrap text-gray-500">
+                                    <?php echo date('d/m', strtotime($r['tanggal'])); ?><br>
+                                    <span class="text-[10px] text-gray-400"><?php echo htmlspecialchars($r['nama_pelaku']); ?></span>
+                                </td>
                                 <td class="p-3 text-gray-600"><?php echo htmlspecialchars($r['keterangan']); ?></td>
                                 <td class="p-3 text-right font-bold <?php echo $warna; ?>">
                                     <?php echo $tanda . ' ' . number_format($r['nominal']); ?>
+                                </td>
+                                <td class="p-3 text-center flex justify-center gap-2">
+                                    <a href="honor.php?edit=<?php echo $r['id']; ?>#formArea" class="bg-yellow-100 text-yellow-600 p-2 rounded hover:bg-yellow-200" title="Edit">
+                                        <i class="fas fa-pencil-alt"></i>
+                                    </a>
+                                    <a href="honor.php?hapus=<?php echo $r['id']; ?>" onclick="return confirm('Yakin hapus transaksi ini? Saldo akan berubah.')" class="bg-red-100 text-red-600 p-2 rounded hover:bg-red-200" title="Hapus">
+                                        <i class="fas fa-trash"></i>
+                                    </a>
                                 </td>
                             </tr>
                             <?php endwhile; ?>
