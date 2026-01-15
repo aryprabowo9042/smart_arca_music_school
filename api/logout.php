@@ -4,23 +4,18 @@ session_start();
 session_unset();
 session_destroy();
 
-// Daftar semua nama cookie yang mungkin kita pakai
-$cookies = ['user_role', 'user_id', 'user_username', 'PHPSESSID'];
+// Hapus semua cookie dengan jalur '/' agar bersih total di semua folder
+$expire = time() - 3600;
+setcookie('user_role', '', $expire, '/');
+setcookie('user_id', '', $expire, '/');
+setcookie('user_username', '', $expire, '/');
 
-foreach ($cookies as $c) {
-    // Hapus untuk semua folder (/)
-    setcookie($c, '', time() - 3600, '/');
-    // Hapus khusus untuk folder api
-    setcookie($c, '', time() - 3600, '/api/');
-}
-
-// Gunakan JavaScript untuk membersihkan sisa memori browser
+// Gunakan JavaScript sebagai pengaman tambahan jika Header PHP gagal
 echo "
 <script>
     localStorage.clear();
     sessionStorage.clear();
-    window.location.replace('/'); // Langsung ke folder root (Landing Page)
+    window.location.replace('/'); // Paksa kembali ke halaman utama (root)
 </script>
-<p>Sedang keluar...</p>
 ";
 exit();
