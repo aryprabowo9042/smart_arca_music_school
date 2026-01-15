@@ -1,12 +1,13 @@
 {
   "functions": {
-    "api/**/*.php": {
+    "**/*.php": {
       "runtime": "vercel-php@0.7.2"
     }
   },
   "routes": [
-    { "src": "/api/logout", "dest": "/api/logout.php" },
-    { "src": "/api/murid/(.*)", "dest": "/api/murid/$1.php" },
-    { "src": "/api/admin/(.*)", "dest": "/api/admin/$1.php" }
+    {
+      "src": "/(.*)",
+      "dest": "/$1"
+    }
   ]
 }
