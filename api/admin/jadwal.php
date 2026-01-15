@@ -1,88 +1,165 @@
 <?php
 session_start();
 ob_start();
+
+// 1. Cek Login Admin
+if (!isset($_COOKIE['user_role']) || $_COOKIE['user_role'] != 'admin') {
+    header("Location: login.php");
+    exit();
+}
+
 require_once(__DIR__ . '/../koneksi.php');
 
-$is_admin = (isset($_SESSION['role']) && $_SESSION['role'] == 'admin') || (isset($_COOKIE['user_role']) && $_COOKIE['user_role'] == 'admin');
-if (!$is_admin) { header("Location: login.php"); exit(); }
+// --- 2. PROSES TAMBAH JADWAL ---
+if (isset($_POST['tambah_jadwal'])) {
+    $id_guru  = $_POST['id_guru'];
+    $id_murid = $_POST['id_murid'];
+    $hari     = $_POST['hari'];
+    $jam      = $_POST['jam'];
+    $alat     = mysqli_real_escape_string($conn, $_POST['alat_musik']);
 
-if (isset($_POST['simpan_j'])) {
-    $g = $_POST['id_guru']; $m = $_POST['id_murid']; $h = $_POST['hari'];
-    $j = mysqli_real_escape_string($conn, $_POST['jam']);
-    $a = mysqli_real_escape_string($conn, $_POST['alat_musik']);
-    $id = $_POST['id_jadwal'] ?? '';
-
-    if (!empty($id)) {
-        mysqli_query($conn, "UPDATE jadwal SET id_guru='$g', id_murid='$m', hari='$h', jam='$j', alat_musik='$a' WHERE id='$id'");
-    } else {
-        mysqli_query($conn, "INSERT INTO jadwal (id_guru, id_murid, hari, jam, alat_musik) VALUES ('$g', '$m', '$h', '$j', '$a')");
+    $sql = "INSERT INTO jadwal (id_guru, id_murid, hari, jam, alat_musik) 
+            VALUES ('$id_guru', '$id_murid', '$hari', '$jam', '$alat')";
+    
+    if (mysqli_query($conn, $sql)) {
+        header("Location: jadwal.php");
+        exit();
     }
-    header("Location: jadwal.php"); exit();
 }
 
+// --- 3. PROSES HAPUS JADWAL ---
 if (isset($_GET['hapus'])) {
-    $id = mysqli_real_escape_string($conn, $_GET['hapus']);
-    mysqli_query($conn, "DELETE FROM jadwal WHERE id='$id'");
-    header("Location: jadwal.php"); exit();
+    $id = $_GET['hapus'];
+    mysqli_query($conn, "DELETE FROM jadwal WHERE id = '$id'");
+    header("Location: jadwal.php");
+    exit();
 }
 
-$edit = null;
-if (isset($_GET['edit'])) {
-    $id_ed = mysqli_real_escape_string($conn, $_GET['edit']);
-    $edit = mysqli_fetch_assoc(mysqli_query($conn, "SELECT * FROM jadwal WHERE id='$id_ed'"));
-}
-
-$gurus = mysqli_query($conn, "SELECT id, username FROM users WHERE role='guru'");
-$murids = mysqli_query($conn, "SELECT id, username FROM users WHERE role='murid'");
-$query_j = mysqli_query($conn, "SELECT j.*, g.username as n_guru, m.username as n_murid FROM jadwal j JOIN users g ON j.id_guru=g.id JOIN users m ON j.id_murid=m.id ORDER BY FIELD(hari,'Senin','Selasa','Rabu','Kamis','Jumat','Sabtu','Minggu')");
+// --- 4. AMBIL DATA GURU & MURID UNTUK DROPDOWN ---
+// Ini yang membuat pilihan di dropdown selalu update otomatis
+$list_guru  = mysqli_query($conn, "SELECT id, username FROM users WHERE role = 'guru' ORDER BY username ASC");
+$list_murid = mysqli_query($conn, "SELECT id, username FROM users WHERE role = 'murid' ORDER BY username ASC");
 ?>
+
 <!DOCTYPE html>
-<html>
+<html lang="id">
 <head>
+    <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Jadwal</title>
-    <style>
-        body { font-family: sans-serif; padding: 15px; background: #f0f2f5; }
-        .box { background: white; padding: 15px; border-radius: 10px; margin-bottom: 20px; }
-        table { width: 100%; border-collapse: collapse; font-size: 13px; }
-        th, td { padding: 10px; border-bottom: 1px solid #eee; text-align: left; }
-        input, select, button { width: 100%; padding: 8px; margin: 4px 0; border: 1px solid #ddd; border-radius: 5px; box-sizing: border-box; }
-        button { background: #1a73e8; color: white; border: none; font-weight: bold; }
-    </style>
+    <title>Atur Jadwal - Smart Arca</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
 </head>
-<body>
-    <a href="index.php">← Kembali</a>
-    <h3>Atur Jadwal</h3>
-    <div class="box">
-        <form method="POST">
-            <input type="hidden" name="id_jadwal" value="<?php echo $edit['id'] ?? ''; ?>">
-            <select name="id_guru" required>
-                <?php mysqli_data_seek($gurus, 0); while($g = mysqli_fetch_assoc($gurus)) { ?>
-                    <option value="<?php echo $g['id']; ?>" <?php echo ($edit && $edit['id_guru']==$g['id'])?'selected':''; ?>><?php echo $g['username']; ?></option>
-                <?php } ?>
-            </select>
-            <select name="id_murid" required>
-                <?php mysqli_data_seek($murids, 0); while($m = mysqli_fetch_assoc($murids)) { ?>
-                    <option value="<?php echo $m['id']; ?>" <?php echo ($edit && $edit['id_murid']==$m['id'])?'selected':''; ?>><?php echo $m['username']; ?></option>
-                <?php } ?>
-            </select>
-            <select name="hari">
-                <?php $hr = ['Senin','Selasa','Rabu','Kamis','Jumat','Sabtu','Minggu']; foreach($hr as $h) { ?>
-                    <option value="<?php echo $h; ?>" <?php echo ($edit && $edit['hari']==$h)?'selected':''; ?>><?php echo $h; ?></option>
-                <?php } ?>
-            </select>
-            <input type="text" name="jam" placeholder="Jam" value="<?php echo $edit['jam'] ?? ''; ?>" required>
-            <input type="text" name="alat_musik" placeholder="Instrumen" value="<?php echo $edit['alat_musik'] ?? ''; ?>" required>
-            <button type="submit" name="simpan_j">SIMPAN JADWAL</button>
-        </form>
+<body class="bg-gray-100 min-h-screen pb-10">
+
+    <nav class="bg-white shadow-sm px-6 py-4 flex justify-between items-center mb-6">
+        <div class="flex items-center gap-3">
+            <a href="index.php" class="text-gray-500 hover:text-blue-600 transition"><i class="fas fa-arrow-left"></i></a>
+            <h1 class="text-xl font-bold text-gray-800">Manajemen Jadwal Les</h1>
+        </div>
+    </nav>
+
+    <div class="max-w-6xl mx-auto px-4 grid grid-cols-1 lg:grid-cols-3 gap-6">
+        
+        <div class="lg:col-span-1">
+            <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 sticky top-24">
+                <h3 class="font-bold text-gray-700 mb-4 border-l-4 border-blue-600 pl-3">Tambah Jadwal Baru</h3>
+                
+                <form method="POST" class="space-y-4">
+                    <div>
+                        <label class="text-[10px] font-bold text-gray-400 uppercase">Pilih Guru</label>
+                        <select name="id_guru" class="w-full p-2 border rounded-lg bg-gray-50 outline-none focus:ring-2 focus:ring-blue-500" required>
+                            <option value="">-- Pilih Guru --</option>
+                            <?php while($g = mysqli_fetch_assoc($list_guru)): ?>
+                                <option value="<?php echo $g['id']; ?>"><?php echo htmlspecialchars($g['username']); ?></option>
+                            <?php endwhile; ?>
+                        </select>
+                    </div>
+
+                    <div>
+                        <label class="text-[10px] font-bold text-gray-400 uppercase">Pilih Murid</label>
+                        <select name="id_murid" class="w-full p-2 border rounded-lg bg-gray-50 outline-none focus:ring-2 focus:ring-blue-500" required>
+                            <option value="">-- Pilih Murid --</option>
+                            <?php while($m = mysqli_fetch_assoc($list_murid)): ?>
+                                <option value="<?php echo $m['id']; ?>"><?php echo htmlspecialchars($m['username']); ?></option>
+                            <?php endwhile; ?>
+                        </select>
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-3">
+                        <div>
+                            <label class="text-[10px] font-bold text-gray-400 uppercase">Hari</label>
+                            <select name="hari" class="w-full p-2 border rounded-lg bg-gray-50 outline-none" required>
+                                <option>Senin</option><option>Selasa</option><option>Rabu</option>
+                                <option>Kamis</option><option>Jumat</option><option>Sabtu</option><option>Minggu</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="text-[10px] font-bold text-gray-400 uppercase">Jam</label>
+                            <input type="time" name="jam" class="w-full p-2 border rounded-lg bg-gray-50 outline-none" required>
+                        </div>
+                    </div>
+
+                    <div>
+                        <label class="text-[10px] font-bold text-gray-400 uppercase">Alat Musik</label>
+                        <input type="text" name="alat_musik" placeholder="Contoh: Piano, Gitar, Vokal" class="w-full p-2 border rounded-lg bg-gray-50 outline-none" required>
+                    </div>
+
+                    <button type="submit" name="tambah_jadwal" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 rounded-xl transition shadow-lg shadow-blue-100">
+                        SIMPAN JADWAL
+                    </button>
+                </form>
+            </div>
+        </div>
+
+        <div class="lg:col-span-2">
+            <div class="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+                <table class="w-full text-sm text-left">
+                    <thead class="bg-gray-50 text-gray-400 text-xs uppercase">
+                        <tr>
+                            <th class="p-4">Hari / Jam</th>
+                            <th class="p-4">Guru</th>
+                            <th class="p-4">Murid</th>
+                            <th class="p-4 text-center">Aksi</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-gray-100">
+                        <?php 
+                        $q_tabel = mysqli_query($conn, "
+                            SELECT j.*, g.username as nama_guru, m.username as nama_murid 
+                            FROM jadwal j
+                            JOIN users g ON j.id_guru = g.id
+                            JOIN users m ON j.id_murid = m.id
+                            ORDER BY FIELD(hari, 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu', 'Minggu'), jam ASC
+                        ");
+                        while($row = mysqli_fetch_assoc($q_tabel)):
+                        ?>
+                        <tr class="hover:bg-gray-50">
+                            <td class="p-4">
+                                <span class="font-bold text-blue-600"><?php echo $row['hari']; ?></span><br>
+                                <span class="text-xs text-gray-400"><?php echo $row['jam']; ?></span>
+                            </td>
+                            <td class="p-4 font-medium"><?php echo $row['nama_guru']; ?></td>
+                            <td class="p-4">
+                                <span class="font-medium text-gray-800"><?php echo $row['nama_murid']; ?></span><br>
+                                <span class="text-[10px] bg-gray-100 px-1 rounded"><?php echo $row['alat_musik']; ?></span>
+                            </td>
+                            <td class="p-4 text-center">
+                                <a href="jadwal.php?hapus=<?php echo $row['id']; ?>" onclick="return confirm('Hapus jadwal ini?')" class="text-red-400 hover:text-red-600">
+                                    <i class="fas fa-trash"></i>
+                                </a>
+                            </td>
+                        </tr>
+                        <?php endwhile; ?>
+                    </tbody>
+                </table>
+                <?php if(mysqli_num_rows($q_tabel) == 0): ?>
+                    <div class="p-10 text-center text-gray-400 text-xs italic">Belum ada jadwal yang diatur.</div>
+                <?php endif; ?>
+            </div>
+        </div>
+
     </div>
-    <table>
-        <?php while($j = mysqli_fetch_assoc($query_j)) { ?>
-        <tr>
-            <td><strong><?php echo $j['n_guru']; ?></strong> → <?php echo $j['n_murid']; ?><br><small><?php echo $j['hari']; ?>, <?php echo $j['jam']; ?> (<?php echo $j['alat_musik']; ?>)</small></td>
-            <td><a href="jadwal.php?edit=<?php echo $j['id']; ?>">Edit</a> | <a href="jadwal.php?hapus=<?php echo $j['id']; ?>" style="color:red" onclick="return confirm('Hapus?')">Hapus</a></td>
-        </tr>
-        <?php } ?>
-    </table>
+
 </body>
 </html>
