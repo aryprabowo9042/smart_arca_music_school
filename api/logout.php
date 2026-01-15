@@ -1,8 +1,11 @@
 <?php
+// api/logout.php
 session_start();
 
-// 1. Hancurkan semua data session di server
+// 1. Kosongkan semua data session
 $_SESSION = array();
+
+// 2. Hancurkan session di server
 if (ini_get("session.use_cookies")) {
     $params = session_get_cookie_params();
     setcookie(session_name(), '', time() - 42000,
@@ -12,24 +15,14 @@ if (ini_get("session.use_cookies")) {
 }
 session_destroy();
 
-// 2. Hancurkan cookie login manual (jika ada)
-if (isset($_COOKIE['user_login'])) {
-    setcookie('user_login', '', time() - 3600, '/');
-    setcookie('user_role', '', time() - 3600, '/');
+// 3. HAPUS COOKIE SECARA AGRESIF (Penyebab utama gagal logout)
+// Kita hapus dengan jalur '/' (Root) agar bersih total
+$cookies_to_clear = ['user_role', 'user_id', 'user_username'];
+foreach ($cookies_to_clear as $cookie_name) {
+    setcookie($cookie_name, '', time() - 3600, '/');
 }
 
-// 3. Gunakan HTML/JS Redirect (Menghindari Error 403 dari Server)
-?>
-<!DOCTYPE html>
-<html>
-<head>
-    <title>Logging out...</title>
-</head>
-<body>
-    <script>
-        // Mengarahkan ke halaman login tanpa memicu proteksi firewall server
-        window.location.replace("admin/login.php");
-    </script>
-    <p>Sedang keluar, silakan tunggu... <a href="admin/login.php">Klik di sini jika tidak berpindah.</a></p>
-</body>
-</html>
+// 4. Lempar ke halaman depan (Landing Page)
+// Gunakan jalur relatif yang tepat dari folder /api/ ke /index.php
+header("Location: ../index.php");
+exit();
