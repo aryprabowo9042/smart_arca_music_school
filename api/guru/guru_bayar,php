@@ -1,0 +1,70 @@
+<?php
+if (!isset($_COOKIE['user_role']) || $_COOKIE['user_role'] != 'guru') {
+    header("Location: ../admin/login.php"); exit();
+}
+require_once(__DIR__ . '/../koneksi.php');
+
+$id_guru = $_COOKIE['user_id'];
+
+// Ambil daftar murid yang diajar oleh guru ini saja
+$list_murid = mysqli_query($conn, "SELECT DISTINCT u.id, u.username FROM users u JOIN jadwal j ON u.id = j.id_murid WHERE j.id_guru = '$id_guru'");
+
+if (isset($_POST['simpan_pembayaran'])) {
+    $tgl = $_POST['tanggal'];
+    $id_murid = $_POST['id_murid'];
+    $nominal = (int)$_POST['nominal'];
+    $ket = mysqli_real_escape_string($conn, $_POST['keterangan']);
+    
+    // Cari nama murid
+    $q_m = mysqli_query($conn, "SELECT username FROM users WHERE id='$id_murid'");
+    $nm = mysqli_fetch_assoc($q_m)['username'];
+
+    // Simpan ke keuangan sebagai MASUK
+    $sql = "INSERT INTO keuangan (tanggal, nama_pelaku, keterangan, jenis, nominal, status_konfirmasi) 
+            VALUES ('$tgl', 'Murid: $nm', '$ket', 'masuk', '$nominal', 1)";
+    
+    if (mysqli_query($conn, $sql)) {
+        echo "<script>alert('Pembayaran berhasil dicatat!'); window.location='index.php';</script>";
+    }
+}
+?>
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Input Pembayaran - Guru</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100 p-4 flex items-center justify-center min-h-screen">
+    <div class="bg-white p-6 rounded-2xl shadow-xl w-full max-w-md">
+        <h2 class="text-xl font-bold mb-6 text-gray-800 flex items-center gap-2">
+            <i class="fas fa-money-bill-wave text-green-500"></i> Terima Bayaran Les
+        </h2>
+        <form method="POST" class="space-y-4">
+            <div>
+                <label class="text-xs font-bold text-gray-400 uppercase">Tanggal Terima</label>
+                <input type="date" name="tanggal" value="<?php echo date('Y-m-d'); ?>" class="w-full p-3 border rounded-xl bg-gray-50">
+            </div>
+            <div>
+                <label class="text-xs font-bold text-gray-400 uppercase">Pilih Murid</label>
+                <select name="id_murid" class="w-full p-3 border rounded-xl bg-white" required>
+                    <?php while($m = mysqli_fetch_assoc($list_murid)): ?>
+                        <option value="<?php echo $m['id']; ?>"><?php echo $m['username']; ?></option>
+                    <?php endwhile; ?>
+                </select>
+            </div>
+            <div>
+                <label class="text-xs font-bold text-gray-400 uppercase">Nominal (Rp)</label>
+                <input type="number" name="nominal" placeholder="Contoh: 500000" class="w-full p-3 border rounded-xl font-bold text-xl" required>
+            </div>
+            <div>
+                <label class="text-xs font-bold text-gray-400 uppercase">Keterangan</label>
+                <input type="text" name="keterangan" placeholder="Misal: Lunas Bulan Mei" class="w-full p-3 border rounded-xl" required>
+            </div>
+            <button type="submit" name="simpan_pembayaran" class="w-full bg-green-600 text-white font-bold py-4 rounded-xl shadow-lg">SIMPAN PEMBAYARAN</button>
+            <a href="index.php" class="block text-center text-sm text-gray-400">Kembali</a>
+        </form>
+    </div>
+</body>
+</html>
