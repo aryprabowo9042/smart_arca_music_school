@@ -5,6 +5,8 @@
     }
   },
   "routes": [
-    { "src": "/api/(.*).php", "dest": "/api/$1.php" }
+    { "src": "/api/logout", "dest": "/api/logout.php" },
+    { "src": "/api/murid/(.*)", "dest": "/api/murid/$1.php" },
+    { "src": "/api/admin/(.*)", "dest": "/api/admin/$1.php" }
   ]
 }
