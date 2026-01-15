@@ -5,21 +5,8 @@
     }
   },
   "routes": [
-    {
-      "src": "/api/admin/(.*)",
-      "dest": "/api/admin/$1"
-    },
-    {
-      "src": "/api/guru/(.*)",
-      "dest": "/api/guru/$1"
-    },
-    {
-      "src": "/api/murid/(.*)",
-      "dest": "/api/murid/$1"
-    },
-    {
-      "src": "/(.*)",
-      "dest": "/api/$1"
-    }
+    { "src": "/api/admin/login", "dest": "/api/admin/login.php" },
+    { "src": "/api/logout", "dest": "/api/logout.php" },
+    { "src": "/(.*)", "dest": "/$1" }
   ]
 }
