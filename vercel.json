@@ -5,11 +5,7 @@
     }
   },
   "routes": [
-    { "src": "/api/admin/login", "dest": "/api/admin/login.php" },
-    { "src": "/api/admin/honor", "dest": "/api/admin/honor.php" },
-    { "src": "/api/murid/index", "dest": "/api/murid/index.php" },
-    { "src": "/api/logout", "dest": "/api/logout.php" },
-    { "src": "/api/cetak_kuitansi", "dest": "/api/cetak_kuitansi.php" },
+    { "handle": "filesystem" },
     { "src": "/(.*)", "dest": "/$1" }
   ]
 }
