@@ -1,34 +1,26 @@
 <?php
 // api/logout.php
 session_start();
-
-// 1. Hapus semua data di server
-$_SESSION = array();
+session_unset();
 session_destroy();
 
-// 2. Hapus semua Cookie (user_role, user_id, user_username)
-// Kita gunakan waktu mundur (expired) agar browser langsung menghapusnya
-$expire = time() - 3600;
-setcookie('user_role', '', $expire, '/');
-setcookie('user_id', '', $expire, '/');
-setcookie('user_username', '', $expire, '/');
+// Daftar semua nama cookie yang mungkin kita pakai
+$cookies = ['user_role', 'user_id', 'user_username', 'PHPSESSID'];
 
-// 3. Gunakan JavaScript untuk memastikan browser benar-benar keluar
-// Ini jauh lebih ampuh daripada header PHP saja
+foreach ($cookies as $c) {
+    // Hapus untuk semua folder (/)
+    setcookie($c, '', time() - 3600, '/');
+    // Hapus khusus untuk folder api
+    setcookie($c, '', time() - 3600, '/api/');
+}
+
+// Gunakan JavaScript untuk membersihkan sisa memori browser
 echo "
-<!DOCTYPE html>
-<html>
-<body>
-    <script>
-        // Hapus sisa-sisa memori di browser
-        localStorage.clear();
-        sessionStorage.clear();
-        
-        // Paksa pindah ke halaman depan
-        window.location.replace('../index.php');
-    </script>
-    <p>Mohon tunggu, sedang keluar...</p>
-</body>
-</html>
+<script>
+    localStorage.clear();
+    sessionStorage.clear();
+    window.location.replace('/'); // Langsung ke folder root (Landing Page)
+</script>
+<p>Sedang keluar...</p>
 ";
 exit();
