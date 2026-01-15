@@ -1,70 +1,112 @@
 <?php
+// 1. CEK LOGIN GURU
 if (!isset($_COOKIE['user_role']) || $_COOKIE['user_role'] != 'guru') {
-    header("Location: ../admin/login.php"); exit();
+    header("Location: ../admin/login.php");
+    exit();
 }
+
 require_once(__DIR__ . '/../koneksi.php');
 
 $id_guru = $_COOKIE['user_id'];
 
-// Ambil daftar murid yang diajar oleh guru ini saja
-$list_murid = mysqli_query($conn, "SELECT DISTINCT u.id, u.username FROM users u JOIN jadwal j ON u.id = j.id_murid WHERE j.id_guru = '$id_guru'");
+// 2. AMBIL DAFTAR MURID YANG DIAJAR GURU INI SAJA (Agar dropdown tidak kepanjangan)
+$list_murid = mysqli_query($conn, "
+    SELECT DISTINCT u.id, u.username 
+    FROM users u 
+    JOIN jadwal j ON u.id = j.id_murid 
+    WHERE j.id_guru = '$id_guru'
+    ORDER BY u.username ASC
+");
 
+// 3. PROSES SIMPAN PEMBAYARAN
 if (isset($_POST['simpan_pembayaran'])) {
     $tgl = $_POST['tanggal'];
     $id_murid = $_POST['id_murid'];
     $nominal = (int)$_POST['nominal'];
     $ket = mysqli_real_escape_string($conn, $_POST['keterangan']);
     
-    // Cari nama murid
+    // Ambil Nama Murid untuk dicatat di laporan Admin
     $q_m = mysqli_query($conn, "SELECT username FROM users WHERE id='$id_murid'");
     $nm = mysqli_fetch_assoc($q_m)['username'];
 
-    // Simpan ke keuangan sebagai MASUK
+    // Simpan ke tabel keuangan sebagai MASUK (Income)
+    // Nama pelaku kita tandai "(Via Guru)" agar Admin tahu siapa yang menerima uangnya
     $sql = "INSERT INTO keuangan (tanggal, nama_pelaku, keterangan, jenis, nominal, status_konfirmasi) 
-            VALUES ('$tgl', 'Murid: $nm', '$ket', 'masuk', '$nominal', 1)";
+            VALUES ('$tgl', 'Murid: $nm (Via Guru)', '$ket', 'masuk', '$nominal', 1)";
     
     if (mysqli_query($conn, $sql)) {
-        echo "<script>alert('Pembayaran berhasil dicatat!'); window.location='index.php';</script>";
+        echo "<script>
+            alert('Pembayaran dari $nm sebesar Rp " . number_format($nominal) . " berhasil dicatat!');
+            window.location='index.php';
+        </script>";
+        exit();
+    } else {
+        echo "<script>alert('Gagal: " . mysqli_error($conn) . "');</script>";
     }
 }
 ?>
 <!DOCTYPE html>
-<html>
+<html lang="id">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Input Pembayaran - Guru</title>
+    <title>Terima SPP - Smart Arca</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
 </head>
-<body class="bg-gray-100 p-4 flex items-center justify-center min-h-screen">
-    <div class="bg-white p-6 rounded-2xl shadow-xl w-full max-w-md">
-        <h2 class="text-xl font-bold mb-6 text-gray-800 flex items-center gap-2">
-            <i class="fas fa-money-bill-wave text-green-500"></i> Terima Bayaran Les
-        </h2>
-        <form method="POST" class="space-y-4">
-            <div>
-                <label class="text-xs font-bold text-gray-400 uppercase">Tanggal Terima</label>
-                <input type="date" name="tanggal" value="<?php echo date('Y-m-d'); ?>" class="w-full p-3 border rounded-xl bg-gray-50">
+<body class="bg-gray-100 min-h-screen p-4 flex items-center justify-center">
+
+    <div class="bg-white p-8 rounded-3xl shadow-2xl w-full max-w-md border border-gray-100">
+        
+        <div class="text-center mb-8">
+            <div class="bg-green-100 text-green-600 w-16 h-16 rounded-2xl flex items-center justify-center mx-auto mb-4 text-2xl">
+                <i class="fas fa-money-check-alt"></i>
             </div>
+            <h2 class="text-2xl font-bold text-gray-800">Terima Bayaran Les</h2>
+            <p class="text-sm text-gray-400">Input pembayaran SPP/Les dari murid</p>
+        </div>
+
+        <form method="POST" class="space-y-5">
+            
             <div>
-                <label class="text-xs font-bold text-gray-400 uppercase">Pilih Murid</label>
-                <select name="id_murid" class="w-full p-3 border rounded-xl bg-white" required>
+                <label class="text-[10px] font-bold text-gray-400 uppercase ml-1">Tanggal Terima</label>
+                <input type="date" name="tanggal" value="<?php echo date('Y-m-d'); ?>" class="w-full p-3 border border-gray-200 rounded-xl outline-none focus:ring-2 focus:ring-green-500 bg-gray-50 transition">
+            </div>
+
+            <div>
+                <label class="text-[10px] font-bold text-gray-400 uppercase ml-1">Pilih Murid</label>
+                <select name="id_murid" class="w-full p-3 border border-gray-200 rounded-xl outline-none focus:ring-2 focus:ring-green-500 bg-white transition" required>
+                    <option value="">-- Pilih Nama Murid --</option>
                     <?php while($m = mysqli_fetch_assoc($list_murid)): ?>
-                        <option value="<?php echo $m['id']; ?>"><?php echo $m['username']; ?></option>
+                        <option value="<?php echo $m['id']; ?>"><?php echo htmlspecialchars($m['username']); ?></option>
                     <?php endwhile; ?>
                 </select>
             </div>
+
             <div>
-                <label class="text-xs font-bold text-gray-400 uppercase">Nominal (Rp)</label>
-                <input type="number" name="nominal" placeholder="Contoh: 500000" class="w-full p-3 border rounded-xl font-bold text-xl" required>
+                <label class="text-[10px] font-bold text-gray-400 uppercase ml-1">Nominal Pembayaran (Rp)</label>
+                <div class="relative">
+                    <span class="absolute left-4 top-3.5 text-gray-400 font-bold">Rp</span>
+                    <input type="number" name="nominal" placeholder="0" class="w-full pl-12 p-4 border border-gray-200 rounded-xl outline-none focus:ring-2 focus:ring-green-500 font-black text-2xl text-gray-700 transition" required>
+                </div>
             </div>
+
             <div>
-                <label class="text-xs font-bold text-gray-400 uppercase">Keterangan</label>
-                <input type="text" name="keterangan" placeholder="Misal: Lunas Bulan Mei" class="w-full p-3 border rounded-xl" required>
+                <label class="text-[10px] font-bold text-gray-400 uppercase ml-1">Keterangan / Untuk Bulan</label>
+                <input type="text" name="keterangan" placeholder="Contoh: Pembayaran bulan Januari" class="w-full p-3 border border-gray-200 rounded-xl outline-none focus:ring-2 focus:ring-green-500 transition" required>
             </div>
-            <button type="submit" name="simpan_pembayaran" class="w-full bg-green-600 text-white font-bold py-4 rounded-xl shadow-lg">SIMPAN PEMBAYARAN</button>
-            <a href="index.php" class="block text-center text-sm text-gray-400">Kembali</a>
+
+            <div class="pt-4">
+                <button type="submit" name="simpan_pembayaran" class="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-4 rounded-2xl shadow-lg shadow-green-100 transition transform active:scale-95">
+                    <i class="fas fa-save mr-2"></i> SIMPAN PEMBAYARAN
+                </button>
+                <a href="index.php" class="block text-center mt-4 text-sm text-gray-400 font-bold hover:text-gray-600 transition">
+                    BATAL / KEMBALI
+                </a>
+            </div>
+
         </form>
     </div>
+
 </body>
 </html>
