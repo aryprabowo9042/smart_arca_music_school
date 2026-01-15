@@ -2,24 +2,13 @@
 session_start();
 ob_start();
 
-// 1. CEK LOGIN ADMIN
 if (!isset($_COOKIE['user_role']) || $_COOKIE['user_role'] != 'admin') {
-    header("Location: login.php");
-    exit();
+    header("Location: login.php"); exit();
 }
 
 require_once(__DIR__ . '/../koneksi.php');
 
-// ==========================================
-// 🛠️ AUTO-REPAIR DATABASE & FORMATTING
-// ==========================================
-mysqli_query($conn, "ALTER TABLE keuangan MODIFY COLUMN jumlah INT DEFAULT 1");
-mysqli_query($conn, "ALTER TABLE keuangan MODIFY COLUMN jenis VARCHAR(50)");
-
-// ==========================================
-// 2. PROSES AKSI (HAPUS / KONFIRMASI)
-// ==========================================
-
+// LOGIKA AKSI
 if (isset($_GET['hapus'])) {
     $id = $_GET['hapus'];
     mysqli_query($conn, "DELETE FROM keuangan WHERE id = '$id'");
@@ -33,54 +22,41 @@ if (isset($_GET['konfirmasi_cair'])) {
     header("Location: honor.php"); exit();
 }
 
-// PROSES SIMPAN (BARU / UPDATE)
 if (isset($_POST['simpan_transaksi'])) {
     $id_edit = $_POST['id_edit'];
-    $tgl  = $_POST['tanggal'];
+    $tgl = $_POST['tanggal'];
     $nama = mysqli_real_escape_string($conn, $_POST['nama_pelaku']); 
-    $ket  = mysqli_real_escape_string($conn, $_POST['keterangan']);
-    $tip  = $_POST['jenis']; 
-    $nom  = (int)$_POST['nominal'];
+    $ket = mysqli_real_escape_string($conn, $_POST['keterangan']);
+    $tip = $_POST['jenis']; 
+    $nom = (int)$_POST['nominal'];
     
     if (!empty($id_edit)) {
         $sql = "UPDATE keuangan SET tanggal='$tgl', nama_pelaku='$nama', keterangan='$ket', jenis='$tip', nominal='$nom' WHERE id='$id_edit'";
     } else {
-        $sql = "INSERT INTO keuangan (tanggal, nama_pelaku, keterangan, jenis, nominal, status_konfirmasi) 
-                VALUES ('$tgl', '$nama', '$ket', '$tip', '$nom', 1)";
+        $sql = "INSERT INTO keuangan (tanggal, nama_pelaku, keterangan, jenis, nominal, status_konfirmasi) VALUES ('$tgl', '$nama', '$ket', '$tip', '$nom', 1)";
     }
     mysqli_query($conn, $sql);
     header("Location: honor.php"); exit();
 }
 
-// DATA EDIT
-$edit_data = ['id' => '', 'tanggal' => date('Y-m-d'), 'jenis' => 'keluar', 'nama_pelaku' => '', 'keterangan' => '', 'nominal' => ''];
+// FIX WARNING: Inisialisasi variabel agar tidak NULL
+$edit_data = ['id' => '', 'tanggal' => date('Y-m-d'), 'jenis' => 'keluar', 'nama_pelaku' => '', 'keterangan' => '', 'nominal' => 0];
 if (isset($_GET['edit'])) {
     $id = $_GET['edit'];
     $q_edit = mysqli_query($conn, "SELECT * FROM keuangan WHERE id = '$id'");
     if(mysqli_num_rows($q_edit) > 0) { $edit_data = mysqli_fetch_assoc($q_edit); }
 }
 
-// ==========================================
-// 3. PERHITUNGAN SALDO (ANTI-NULL)
-// ==========================================
+// HITUNG SALDO
 $q_spp = mysqli_query($conn, "SELECT SUM(nominal_bayar) as total FROM absensi");
 $total_spp = (float)(mysqli_fetch_assoc($q_spp)['total'] ?? 0);
-
 $q_masuk = mysqli_query($conn, "SELECT SUM(nominal) as total FROM keuangan WHERE jenis='masuk' AND status_konfirmasi = 1");
-$total_masuk_manual = (float)(mysqli_fetch_assoc($q_masuk)['total'] ?? 0);
-
+$total_masuk = (float)(mysqli_fetch_assoc($q_masuk)['total'] ?? 0);
 $q_keluar = mysqli_query($conn, "SELECT SUM(nominal) as total FROM keuangan WHERE jenis='keluar' AND status_konfirmasi = 1");
 $total_keluar = (float)(mysqli_fetch_assoc($q_keluar)['total'] ?? 0);
+$saldo_akhir = ($total_spp + $total_masuk) - $total_keluar;
 
-$saldo_akhir = ($total_spp + $total_masuk_manual) - $total_keluar;
-
-// DATA GURU UNTUK DROPDOWN & HAK HONOR
-$list_guru = mysqli_query($conn, "
-    SELECT u.username, 
-    (SELECT SUM(a.nominal_bayar) FROM absensi a 
-     JOIN jadwal j ON a.id_jadwal = j.id 
-     WHERE j.id_guru = u.id) * 0.5 as hak_honor
-    FROM users u WHERE u.role = 'guru'");
+$list_guru = mysqli_query($conn, "SELECT u.username, (SELECT SUM(a.nominal_bayar) FROM absensi a JOIN jadwal j ON a.id_jadwal = j.id WHERE j.id_guru = u.id) * 0.5 as hak_honor FROM users u WHERE u.role = 'guru'");
 ?>
 <!DOCTYPE html>
 <html lang="id">
@@ -91,49 +67,59 @@ $list_guru = mysqli_query($conn, "
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
 </head>
 <body class="bg-gray-100 min-h-screen pb-10">
-    <nav class="bg-white shadow-sm px-6 py-4 flex justify-between items-center mb-6 sticky top-0 z-50">
-        <h1 class="text-xl font-bold text-gray-800"><a href="index.php"><i class="fas fa-arrow-left mr-2"></i></a> Keuangan</h1>
-        <div class="bg-blue-600 text-white px-5 py-2 rounded-full font-bold">
+    <nav class="bg-red-600 shadow-md px-6 py-4 flex justify-between items-center mb-6 sticky top-0 z-50 border-b-4 border-yellow-400">
+        <div class="flex items-center gap-3">
+            <a href="index.php" class="text-yellow-400 hover:text-white transition"><i class="fas fa-arrow-left"></i></a>
+            <h1 class="text-xl font-bold text-white">Manajemen Kas</h1>
+        </div>
+        <div class="bg-yellow-400 text-red-700 px-5 py-2 rounded-full font-bold shadow-lg">
             Saldo: Rp <?php echo number_format($saldo_akhir, 0, ',', '.'); ?>
         </div>
     </nav>
 
     <div class="max-w-6xl mx-auto px-4 grid grid-cols-1 lg:grid-cols-3 gap-6">
         
+        <div class="lg:col-span-3">
+            <?php 
+            $q_pending = mysqli_query($conn, "SELECT * FROM keuangan WHERE status_konfirmasi = 0");
+            while($p = mysqli_fetch_assoc($q_pending)): ?>
+            <div class="bg-yellow-100 border-l-8 border-red-600 p-4 rounded-xl flex justify-between items-center shadow-sm mb-4">
+                <div>
+                    <p class="text-xs font-bold text-red-600 uppercase">Permintaan Pencairan: <?php echo $p['nama_pelaku']; ?></p>
+                    <p class="text-xl font-black text-gray-800">Rp <?php echo number_format($p['nominal']); ?></p>
+                </div>
+                <a href="honor.php?konfirmasi_cair=<?php echo $p['id']; ?>" class="bg-red-600 text-yellow-400 px-4 py-2 rounded-xl text-xs font-bold hover:bg-red-700 shadow-md transition">KONFIRMASI</a>
+            </div>
+            <?php endwhile; ?>
+        </div>
+
         <div class="space-y-6">
             <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
-                <h3 class="font-bold text-gray-700 mb-4 flex items-center gap-2"><i class="fas fa-money-check-alt text-purple-500"></i> Hak Honor Guru</h3>
-                <div class="space-y-3">
-                    <?php while($g = mysqli_fetch_assoc($list_guru)): 
-                        // PERBAIKAN: Pastikan nilai honor tidak NULL
-                        $honor = (float)($g['hak_honor'] ?? 0); 
-                    ?>
-                    <div class="flex justify-between items-center border-b border-dashed pb-2">
-                        <div>
-                            <p class="font-bold text-sm"><?php echo htmlspecialchars($g['username']); ?></p>
-                            <p class="text-[10px] text-gray-400 font-bold uppercase">Hak: Rp <?php echo number_format($honor, 0, ',', '.'); ?></p>
-                        </div>
-                        <button onclick="document.getElementById('nama_pelaku').value='<?php echo $g['username']; ?>'; document.getElementById('nominal').value='<?php echo $honor; ?>'; document.getElementById('keterangan').value='Pembayaran Honor'; document.getElementById('jenis_transaksi').value='keluar'; document.getElementById('nominal').focus();" class="bg-purple-100 text-purple-700 px-3 py-1.5 rounded-lg text-xs font-bold transition hover:bg-purple-600 hover:text-white">BAYAR</button>
-                    </div>
-                    <?php endwhile; ?>
+                <h3 class="font-bold text-red-600 mb-4 border-b-2 border-yellow-400 pb-2 uppercase text-xs tracking-wider">Hak Guru</h3>
+                <?php while($g = mysqli_fetch_assoc($list_guru)): ?>
+                <div class="flex justify-between items-center border-b border-dashed py-3">
+                    <div><p class="font-bold text-sm text-gray-800"><?php echo $g['username']; ?></p><p class="text-[10px] text-gray-400 font-bold uppercase">Rp <?php echo number_format((float)$g['hak_honor']); ?></p></div>
+                    <button onclick="document.getElementById('nama_pelaku').value='<?php echo $g['username']; ?>'; document.getElementById('nominal').value='<?php echo (float)$g['hak_honor']; ?>'; document.getElementById('keterangan').value='Pembayaran Honor'; document.getElementById('jenis_transaksi').value='keluar';" class="bg-red-50 text-red-600 hover:bg-red-600 hover:text-yellow-400 px-3 py-1 rounded-lg text-[10px] font-bold transition">BAYAR</button>
                 </div>
+                <?php endwhile; ?>
             </div>
         </div>
 
         <div class="lg:col-span-2 space-y-6">
             <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100" id="formArea">
+                <h3 class="font-bold text-gray-700 mb-4"><?php echo $edit_data['id'] ? '📝 Edit Data' : '➕ Transaksi Manual'; ?></h3>
                 <form method="POST" class="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <input type="hidden" name="id_edit" value="<?php echo $edit_data['id']; ?>">
-                    <div>
-                        <label class="text-[10px] font-bold text-gray-400 uppercase">Tanggal</label>
-                        <input type="date" name="tanggal" value="<?php echo $edit_data['tanggal']; ?>" class="w-full p-2 border rounded-lg bg-gray-50">
-                    </div>
-                    <div>
+                    <div class="md:col-span-1">
                         <label class="text-[10px] font-bold text-gray-400 uppercase">Jenis</label>
-                        <select name="jenis" id="jenis_transaksi" class="w-full p-2 border rounded-lg bg-gray-50">
+                        <select name="jenis" id="jenis_transaksi" class="w-full p-2 border rounded-lg bg-gray-50 focus:ring-2 focus:ring-red-500 outline-none">
                             <option value="keluar" <?php echo ($edit_data['jenis'] == 'keluar') ? 'selected' : ''; ?>>🔴 Pengeluaran</option>
                             <option value="masuk" <?php echo ($edit_data['jenis'] == 'masuk') ? 'selected' : ''; ?>>🟢 Pemasukan</option>
                         </select>
+                    </div>
+                    <div>
+                        <label class="text-[10px] font-bold text-gray-400 uppercase">Tanggal</label>
+                        <input type="date" name="tanggal" value="<?php echo $edit_data['tanggal']; ?>" class="w-full p-2 border rounded-lg bg-gray-50">
                     </div>
                     <div class="md:col-span-2">
                         <label class="text-[10px] font-bold text-gray-400 uppercase">Nama Pelaku</label>
@@ -145,41 +131,10 @@ $list_guru = mysqli_query($conn, "
                     </div>
                     <div class="md:col-span-2">
                         <label class="text-[10px] font-bold text-gray-400 uppercase">Nominal</label>
-                        <input type="number" name="nominal" id="nominal" value="<?php echo (float)($edit_data['nominal'] ?? 0); ?>" class="w-full p-3 border rounded-lg font-bold text-xl" required>
+                        <input type="number" name="nominal" id="nominal" value="<?php echo (float)$edit_data['nominal']; ?>" class="w-full p-3 border rounded-lg font-bold text-2xl text-red-600" required>
                     </div>
-                    <button type="submit" name="simpan_transaksi" class="md:col-span-2 bg-blue-600 text-white font-bold py-3 rounded-xl hover:bg-blue-700 transition shadow-lg">SIMPAN TRANSAKSI</button>
+                    <button type="submit" name="simpan_transaksi" class="md:col-span-2 bg-red-600 hover:bg-red-700 text-yellow-400 font-bold py-4 rounded-xl shadow-lg transition transform active:scale-95">SIMPAN TRANSAKSI</button>
                 </form>
-            </div>
-
-            <div class="bg-white rounded-2xl shadow-sm border overflow-hidden">
-                <div class="overflow-x-auto">
-                    <table class="w-full text-sm text-left">
-                        <thead class="bg-white text-gray-400 text-[10px] uppercase border-b">
-                            <tr><th class="p-4">Tgl</th><th class="p-4">Nama Pelaku</th><th class="p-4">Ket</th><th class="p-4 text-right">Nominal</th><th class="p-4 text-center">Aksi</th></tr>
-                        </thead>
-                        <tbody class="divide-y divide-gray-50">
-                            <?php 
-                            $riwayat = mysqli_query($conn, "SELECT * FROM keuangan WHERE status_konfirmasi = 1 ORDER BY tanggal DESC LIMIT 20");
-                            while($r = mysqli_fetch_assoc($riwayat)): 
-                                $warna = ($r['jenis'] == 'masuk') ? 'text-green-600' : 'text-red-500';
-                                $nom = (float)($r['nominal'] ?? 0);
-                            ?>
-                            <tr class="hover:bg-blue-50 transition">
-                                <td class="p-4 text-gray-500"><?php echo date('d/m', strtotime($r['tanggal'])); ?></td>
-                                <td class="p-4 font-bold"><?php echo htmlspecialchars($r['nama_pelaku']); ?></td>
-                                <td class="p-4 text-gray-500"><?php echo htmlspecialchars($r['keterangan']); ?></td>
-                                <td class="p-4 text-right font-bold <?php echo $warna; ?>"><?php echo number_format($nom, 0, ',', '.'); ?></td>
-                                <td class="p-4 text-center">
-                                    <div class="flex justify-center gap-2">
-                                        <a href="honor.php?edit=<?php echo $r['id']; ?>#formArea" class="text-yellow-500"><i class="fas fa-edit"></i></a>
-                                        <a href="honor.php?hapus=<?php echo $r['id']; ?>" class="text-red-300"><i class="fas fa-trash"></i></a>
-                                    </div>
-                                </td>
-                            </tr>
-                            <?php endwhile; ?>
-                        </tbody>
-                    </table>
-                </div>
             </div>
         </div>
     </div>
