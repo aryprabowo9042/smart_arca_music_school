@@ -16,7 +16,7 @@ $username = $_COOKIE['user_username'] ?? 'Guru';
 if (isset($_POST['absen'])) {
     $id_jadwal = $_POST['id_jadwal'];
     $tgl = date('Y-m-d');
-    $nom = (int)$_POST['nominal_bayar']; // Pastikan angka
+    $nom = (int)$_POST['nominal_bayar']; 
     $materi = mysqli_real_escape_string($conn, $_POST['materi_les']);
     $refleksi = mysqli_real_escape_string($conn, $_POST['refleksi_guru']);
     $mulai = $_POST['jam_mulai'];
@@ -24,7 +24,7 @@ if (isset($_POST['absen'])) {
     $id_edit = $_POST['id_edit'] ?? '';
 
     if (!empty($id_edit)) {
-        // PERBAIKAN QUERY UPDATE
+        // BARIS 41: PERBAIKAN QUERY UPDATE
         $sql = "UPDATE absensi SET 
                 nominal_bayar = '$nom', 
                 materi_les = '$materi', 
@@ -33,7 +33,7 @@ if (isset($_POST['absen'])) {
                 jam_selesai = '$selesai' 
                 WHERE id = '$id_edit'";
     } else {
-        // PERBAIKAN QUERY INSERT
+        // QUERY INSERT
         $sql = "INSERT INTO absensi (id_jadwal, tanggal, nominal_bayar, materi_les, refleksi_guru, jam_mulai, jam_selesai) 
                 VALUES ('$id_jadwal', '$tgl', '$nom', '$materi', '$refleksi', '$mulai', '$selesai')";
     }
@@ -42,11 +42,11 @@ if (isset($_POST['absen'])) {
         header("Location: index.php"); 
         exit();
     } else {
-        echo "Error: " . mysqli_error($conn); // Menampilkan pesan jika ada error SQL
+        die("Gagal simpan ke database: " . mysqli_error($conn)); 
     }
 }
 
-// 3. PERHITUNGAN SALDO (SAMA SEPERTI SEBELUMNYA)
+// 3. PERHITUNGAN SALDO GURU
 $q_saldo = mysqli_query($conn, "SELECT SUM(nominal_bayar) as total FROM absensi a JOIN jadwal j ON a.id_jadwal = j.id WHERE j.id_guru = '$id_guru'");
 $res_saldo = mysqli_fetch_assoc($q_saldo);
 $total_hak = floor(($res_saldo['total'] ?? 0) * 0.5);
@@ -56,6 +56,7 @@ $total_hak = floor(($res_saldo['total'] ?? 0) * 0.5);
 <html lang="id">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Teacher Journal - Smart Arca</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
@@ -63,14 +64,22 @@ $total_hak = floor(($res_saldo['total'] ?? 0) * 0.5);
     <style>body { font-family: 'Plus Jakarta Sans', sans-serif; }</style>
 </head>
 <body class="bg-slate-50 min-h-screen pb-20">
+
     <nav class="bg-indigo-900 shadow-xl px-6 py-4 flex justify-between items-center mb-6 border-b-4 border-yellow-400 sticky top-0 z-50 text-white">
         <div class="flex items-center gap-3">
-            <h1 class="font-black text-lg italic uppercase">Teacher Journal</h1>
+            <h1 class="font-black text-lg italic uppercase tracking-tighter">Teacher Journal</h1>
         </div>
-        <a href="../logout.php" class="bg-red-500 p-2 rounded-lg shadow-lg active:scale-95 transition"><i class="fas fa-sign-out-alt"></i></a>
+        <a href="../logout.php" class="bg-red-500 hover:bg-red-600 text-white w-10 h-10 rounded-xl flex items-center justify-center shadow-lg transition transform active:scale-95">
+            <i class="fas fa-sign-out-alt"></i>
+        </a>
     </nav>
 
     <div class="max-w-6xl mx-auto px-4">
+        <div class="bg-white p-6 rounded-[2rem] shadow-lg mb-8 border-l-8 border-indigo-600">
+            <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest">Honor Terkumpul (50%)</p>
+            <h2 class="text-3xl font-black text-slate-800 italic">Rp <?php echo number_format($total_hak, 0, ',', '.'); ?></h2>
+        </div>
+
         <div class="space-y-8">
             <?php 
             $sql_j = "SELECT j.*, u.username as nama_murid FROM jadwal j JOIN users u ON j.id_murid = u.id WHERE j.id_guru = '$id_guru' ORDER BY FIELD(hari, 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu', 'Minggu'), jam ASC";
@@ -140,16 +149,15 @@ $total_hak = floor(($res_saldo['total'] ?? 0) * 0.5);
                         </div>
                         <div>
                             <p class="text-[9px] font-black text-slate-400 uppercase tracking-widest">Materi</p>
-                            <p class="text-xs font-bold text-slate-700 leading-relaxed"><?php echo htmlspecialchars($data_a['materi_les'] ?? 'Belum ada materi'); ?></p>
+                            <p class="text-xs font-bold text-slate-700 leading-relaxed"><?php echo htmlspecialchars($data_a['materi_les'] ?? ''); ?></p>
                         </div>
                         <div>
                             <p class="text-[9px] font-black text-slate-400 uppercase tracking-widest">Refleksi</p>
-                            <p class="text-xs italic text-slate-500 leading-relaxed">"<?php echo htmlspecialchars($data_a['refleksi_guru'] ?? 'Belum ada catatan'); ?>"</p>
+                            <p class="text-xs italic text-slate-500 leading-relaxed">"<?php echo htmlspecialchars($data_a['refleksi_guru'] ?? ''); ?>"</p>
                         </div>
                     </div>
                 <?php endif; ?>
             </div>
-            
             <?php endwhile; ?>
         </div>
     </div>
