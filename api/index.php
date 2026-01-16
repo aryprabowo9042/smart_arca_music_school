@@ -50,8 +50,8 @@ if ($is_logged_in) {
                     <a href="<?php echo $dashboard_link; ?>" class="bg-red-600 hover:bg-red-700 text-yellow-400 px-6 py-2.5 rounded-2xl font-black text-xs shadow-lg transition flex items-center gap-2 uppercase">
                         <i class="fas fa-th-large"></i> Dashboard
                     </a>
-                    <a href="/api/logout.php" class="bg-slate-100 hover:bg-slate-200 text-slate-600 p-2.5 rounded-2xl transition">
-                        <i class="fas fa-sign-out-alt"></i>
+                    <a href="../logout.php" class="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-xl transition shadow-lg">
+                    <i class="fas fa-sign-out-alt mr-2"></i> Keluar
                     </a>
                 <?php else: ?>
                     <a href="/api/admin/login.php" class="bg-red-600 hover:bg-red-700 text-yellow-400 px-8 py-2.5 rounded-2xl font-black text-xs shadow-lg transition flex items-center gap-2 border-b-4 border-red-800 uppercase">
