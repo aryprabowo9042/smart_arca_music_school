@@ -22,34 +22,33 @@ if (isset($_POST['absen'])) {
     $id_edit = $_POST['id_edit'] ?? '';
 
     if (!empty($id_edit)) {
+        // Mode Edit: Update data yang sudah ada
         mysqli_query($conn, "UPDATE absensi SET nominal_bayar='$nom' WHERE id='$id_edit'");
     } else {
+        // Mode Baru: Masukkan data baru
         mysqli_query($conn, "INSERT INTO absensi (id_jadwal, tanggal, nominal_bayar) VALUES ('$id_jadwal', '$tgl', '$nom')");
     }
     header("Location: index.php"); exit();
 }
 
-// B. Ajukan Penarikan Saldo (Konfirmasi ke Admin)
+// B. Ajukan Penarikan Saldo
 if (isset($_POST['tarik_saldo'])) {
     $nominal_tarik = $_POST['total_hak'];
-    $ket = "Penarikan Honor oleh " . $username;
-    // Status konfirmasi 0 artinya menunggu persetujuan admin di tabel keuangan
+    $ket = "Penarikan Honor: " . $username;
     mysqli_query($conn, "INSERT INTO keuangan (tanggal, nama_pelaku, keterangan, jenis, nominal, status_konfirmasi) 
                          VALUES (CURDATE(), '$username', '$ket', 'keluar', '$nominal_tarik', 0)");
     header("Location: index.php?msg=pending"); exit();
 }
 
 // ==========================================
-// 3. PERHITUNGAN SALDO GURU (50%)
+// 3. PERHITUNGAN SALDO
 // ==========================================
-// Menghitung total SPP yang dikumpulkan guru ini dari tabel absensi
 $q_saldo = mysqli_query($conn, "SELECT SUM(a.nominal_bayar) as total FROM absensi a 
                                 JOIN jadwal j ON a.id_jadwal = j.id 
                                 WHERE j.id_guru = '$id_guru'");
 $res_saldo = mysqli_fetch_assoc($q_saldo);
 $total_hak = FLOOR(($res_saldo['total'] ?? 0) * 0.5);
 
-// Cek apakah ada penarikan yang sedang pending
 $q_pending = mysqli_query($conn, "SELECT id FROM keuangan WHERE nama_pelaku = '$username' AND status_konfirmasi = 0");
 $is_pending = mysqli_num_rows($q_pending) > 0;
 ?>
@@ -58,7 +57,7 @@ $is_pending = mysqli_num_rows($q_pending) > 0;
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Guru Dashboard - Smart Arca</title>
+    <title>Teacher Dashboard - Smart Arca</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;800&display=swap" rel="stylesheet">
@@ -79,13 +78,13 @@ $is_pending = mysqli_num_rows($q_pending) > 0;
         <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
             <div class="md:col-span-2 bg-white p-8 rounded-[2.5rem] shadow-xl border-l-[12px] border-indigo-600 flex justify-between items-center">
                 <div>
-                    <p class="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-1">Estimasi Honor Anda (50%)</p>
+                    <p class="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-1">Honor Anda (50%)</p>
                     <h2 class="text-4xl font-black text-slate-800 italic">Rp <?php echo number_format($total_hak, 0, ',', '.'); ?></h2>
                 </div>
                 <?php if($total_hak > 0 && !$is_pending): ?>
                     <form method="POST">
                         <input type="hidden" name="total_hak" value="<?php echo $total_hak; ?>">
-                        <button type="submit" name="tarik_saldo" class="bg-green-500 hover:bg-green-600 text-white px-6 py-3 rounded-2xl font-black text-xs uppercase shadow-lg transition active:scale-95">Tarik Saldo</button>
+                        <button type="submit" name="tarik_saldo" class="bg-green-500 hover:bg-green-600 text-white px-6 py-3 rounded-2xl font-black text-xs uppercase shadow-lg transition">Tarik Saldo</button>
                     </form>
                 <?php elseif($is_pending): ?>
                     <span class="bg-yellow-100 text-yellow-700 px-6 py-3 rounded-2xl font-black text-xs uppercase italic border-2 border-yellow-200">Menunggu Admin...</span>
@@ -98,20 +97,17 @@ $is_pending = mysqli_num_rows($q_pending) > 0;
         </div>
 
         <div class="bg-white rounded-[2.5rem] shadow-2xl overflow-hidden border border-slate-100">
-            <div class="p-6 bg-slate-50 border-b flex justify-between items-center">
-                <h3 class="font-black text-slate-800 uppercase text-xs italic tracking-widest">Manajemen Kelas & Absensi</h3>
-                <?php if(isset($_GET['msg']) && $_GET['msg'] == 'pending'): ?>
-                    <span class="text-[9px] font-bold text-indigo-600 animate-pulse">Permintaan penarikan telah dikirim!</span>
-                <?php endif; ?>
+            <div class="p-6 bg-slate-50 border-b">
+                <h3 class="font-black text-slate-800 uppercase text-xs italic tracking-widest">Daftar Jadwal & Absensi Les</h3>
             </div>
             <div class="overflow-x-auto">
                 <table class="w-full text-sm text-left">
                     <thead class="bg-slate-50 text-slate-400 text-[9px] uppercase font-black border-b">
                         <tr>
-                            <th class="p-6">Jadwal</th>
-                            <th class="p-6">Siswa</th>
-                            <th class="p-6">Status SPP Hari Ini</th>
-                            <th class="p-6 text-center">Aksi</th>
+                            <th class="p-6">Waktu</th>
+                            <th class="p-6">Siswa / Alat</th>
+                            <th class="p-6">Status Bayar</th>
+                            <th class="p-6 text-center">Isi Absensi Les</th>
                         </tr>
                     </thead>
                     <tbody class="divide-y divide-slate-50">
@@ -129,6 +125,7 @@ $is_pending = mysqli_num_rows($q_pending) > 0;
                             $cek_absen = mysqli_query($conn, "SELECT id, nominal_bayar FROM absensi WHERE id_jadwal = '$id_jadwal' AND tanggal = '$tgl_skrg'");
                             $data_absen = mysqli_fetch_assoc($cek_absen);
                             $is_done = ($data_absen != null);
+                            $is_editing = (isset($_GET['edit_id']) && $_GET['edit_id'] == $data_absen['id']);
                         ?>
                         <tr class="hover:bg-indigo-50/30 transition">
                             <td class="p-6">
@@ -140,35 +137,40 @@ $is_pending = mysqli_num_rows($q_pending) > 0;
                                 <p class="text-[9px] text-slate-400 font-bold uppercase mt-1 italic"><?php echo $r['alat_musik']; ?></p>
                             </td>
                             <td class="p-6">
-                                <?php if($is_done): ?>
+                                <?php if($is_done && !$is_editing): ?>
                                     <div class="flex flex-col">
-                                        <span class="text-green-600 font-black text-[10px] uppercase italic">Terbayar</span>
+                                        <span class="text-green-600 font-black text-[10px] uppercase italic">Terabsen</span>
                                         <span class="text-slate-400 font-bold text-xs">Rp <?php echo number_format($data_absen['nominal_bayar']); ?></span>
                                     </div>
                                 <?php else: ?>
-                                    <span class="text-slate-300 font-bold text-[10px] uppercase italic">Belum Absen</span>
+                                    <span class="text-slate-300 font-bold text-[10px] uppercase italic">Belum Diisi</span>
                                 <?php endif; ?>
                             </td>
                             <td class="p-6 text-center">
-                                <?php if(!$is_done): ?>
-                                    <form method="POST" class="flex gap-2 justify-center">
+                                <?php if(!$is_done || $is_editing): ?>
+                                    <form method="POST" class="flex gap-2 justify-center items-center">
                                         <input type="hidden" name="id_jadwal" value="<?php echo $r['id']; ?>">
-                                        <input type="number" name="nominal_bayar" class="w-24 p-2 border-2 border-slate-100 rounded-lg text-xs font-bold focus:border-indigo-600 outline-none" placeholder="Nominal..." required>
-                                        <button type="submit" name="absen" class="bg-indigo-600 text-white px-4 py-2 rounded-lg text-[10px] font-black uppercase shadow-md">Kirim</button>
+                                        <?php if($is_editing): ?>
+                                            <input type="hidden" name="id_edit" value="<?php echo $data_absen['id']; ?>">
+                                        <?php endif; ?>
+                                        
+                                        <input type="number" name="nominal_bayar" 
+                                               value="<?php echo $is_editing ? $data_absen['nominal_bayar'] : ''; ?>" 
+                                               class="w-28 p-2 border-2 <?php echo $is_editing ? 'border-yellow-400' : 'border-slate-100'; ?> rounded-lg text-xs font-bold focus:border-indigo-600 outline-none" 
+                                               placeholder="Nominal SPP" required>
+                                        
+                                        <button type="submit" name="absen" class="bg-indigo-600 text-white px-4 py-2 rounded-lg text-[10px] font-black uppercase shadow-md hover:bg-indigo-700">
+                                            <?php echo $is_editing ? 'Update' : 'Kirim'; ?>
+                                        </button>
+                                        
+                                        <?php if($is_editing): ?>
+                                            <a href="index.php" class="text-slate-400"><i class="fas fa-times"></i></a>
+                                        <?php endif; ?>
                                     </form>
                                 <?php else: ?>
-                                    <?php if(isset($_GET['edit_id']) && $_GET['edit_id'] == $data_absen['id']): ?>
-                                        <form method="POST" class="flex gap-2 justify-center">
-                                            <input type="hidden" name="id_edit" value="<?php echo $data_absen['id']; ?>">
-                                            <input type="number" name="nominal_bayar" value="<?php echo $data_absen['nominal_bayar']; ?>" class="w-24 p-2 border-2 border-green-500 rounded-lg text-xs font-bold outline-none" required>
-                                            <button type="submit" name="absen" class="bg-green-600 text-white px-4 py-2 rounded-lg text-[10px] font-black uppercase">Simpan</button>
-                                            <a href="index.php" class="text-slate-400 p-2"><i class="fas fa-times"></i></a>
-                                        </form>
-                                    <?php else: ?>
-                                        <a href="index.php?edit_id=<?php echo $data_absen['id']; ?>" class="inline-block bg-yellow-400 text-yellow-900 px-4 py-2 rounded-lg text-[10px] font-black uppercase hover:bg-indigo-600 hover:text-white transition shadow-sm">
-                                            <i class="fas fa-edit mr-1"></i> Edit Data
-                                        </a>
-                                    <?php endif; ?>
+                                    <a href="index.php?edit_id=<?php echo $data_absen['id']; ?>" class="inline-block bg-yellow-400 text-yellow-900 px-4 py-2 rounded-lg text-[10px] font-black uppercase hover:bg-indigo-600 hover:text-white transition">
+                                        <i class="fas fa-edit mr-1"></i> Edit Absensi
+                                    </a>
                                 <?php endif; ?>
                             </td>
                         </tr>
