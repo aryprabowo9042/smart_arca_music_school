@@ -22,10 +22,8 @@ if (isset($_POST['absen'])) {
     $id_edit = $_POST['id_edit'] ?? '';
 
     if (!empty($id_edit)) {
-        // Mode Edit: Update data yang sudah ada
         mysqli_query($conn, "UPDATE absensi SET nominal_bayar='$nom' WHERE id='$id_edit'");
     } else {
-        // Mode Baru: Masukkan data baru
         mysqli_query($conn, "INSERT INTO absensi (id_jadwal, tanggal, nominal_bayar) VALUES ('$id_jadwal', '$tgl', '$nom')");
     }
     header("Location: index.php"); exit();
@@ -124,8 +122,13 @@ $is_pending = mysqli_num_rows($q_pending) > 0;
                             $tgl_skrg = date('Y-m-d');
                             $cek_absen = mysqli_query($conn, "SELECT id, nominal_bayar FROM absensi WHERE id_jadwal = '$id_jadwal' AND tanggal = '$tgl_skrg'");
                             $data_absen = mysqli_fetch_assoc($cek_absen);
-                            $is_done = ($data_absen != null);
-                            $is_editing = (isset($_GET['edit_id']) && $_GET['edit_id'] == $data_absen['id']);
+                            
+                            // Perbaikan Warning: Cek data_absen tidak boleh null sebelum diakses
+                            $is_done = ($data_absen !== null);
+                            $absen_id = $is_done ? $data_absen['id'] : '';
+                            $absen_nominal = $is_done ? $data_absen['nominal_bayar'] : '';
+                            
+                            $is_editing = (isset($_GET['edit_id']) && $_GET['edit_id'] == $absen_id && $is_done);
                         ?>
                         <tr class="hover:bg-indigo-50/30 transition">
                             <td class="p-6">
@@ -140,7 +143,7 @@ $is_pending = mysqli_num_rows($q_pending) > 0;
                                 <?php if($is_done && !$is_editing): ?>
                                     <div class="flex flex-col">
                                         <span class="text-green-600 font-black text-[10px] uppercase italic">Terabsen</span>
-                                        <span class="text-slate-400 font-bold text-xs">Rp <?php echo number_format($data_absen['nominal_bayar']); ?></span>
+                                        <span class="text-slate-400 font-bold text-xs">Rp <?php echo number_format($absen_nominal, 0, ',', '.'); ?></span>
                                     </div>
                                 <?php else: ?>
                                     <span class="text-slate-300 font-bold text-[10px] uppercase italic">Belum Diisi</span>
@@ -151,11 +154,11 @@ $is_pending = mysqli_num_rows($q_pending) > 0;
                                     <form method="POST" class="flex gap-2 justify-center items-center">
                                         <input type="hidden" name="id_jadwal" value="<?php echo $r['id']; ?>">
                                         <?php if($is_editing): ?>
-                                            <input type="hidden" name="id_edit" value="<?php echo $data_absen['id']; ?>">
+                                            <input type="hidden" name="id_edit" value="<?php echo $absen_id; ?>">
                                         <?php endif; ?>
                                         
                                         <input type="number" name="nominal_bayar" 
-                                               value="<?php echo $is_editing ? $data_absen['nominal_bayar'] : ''; ?>" 
+                                               value="<?php echo $is_editing ? $absen_nominal : ''; ?>" 
                                                class="w-28 p-2 border-2 <?php echo $is_editing ? 'border-yellow-400' : 'border-slate-100'; ?> rounded-lg text-xs font-bold focus:border-indigo-600 outline-none" 
                                                placeholder="Nominal SPP" required>
                                         
@@ -168,7 +171,7 @@ $is_pending = mysqli_num_rows($q_pending) > 0;
                                         <?php endif; ?>
                                     </form>
                                 <?php else: ?>
-                                    <a href="index.php?edit_id=<?php echo $data_absen['id']; ?>" class="inline-block bg-yellow-400 text-yellow-900 px-4 py-2 rounded-lg text-[10px] font-black uppercase hover:bg-indigo-600 hover:text-white transition">
+                                    <a href="index.php?edit_id=<?php echo $absen_id; ?>" class="inline-block bg-yellow-400 text-yellow-900 px-4 py-2 rounded-lg text-[10px] font-black uppercase hover:bg-indigo-600 hover:text-white transition">
                                         <i class="fas fa-edit mr-1"></i> Edit Absensi
                                     </a>
                                 <?php endif; ?>
