@@ -1,16 +1,17 @@
 <?php
 // 1. PROTEKSI HALAMAN
 if (!isset($_COOKIE['user_role']) || $_COOKIE['user_role'] != 'murid') {
-    header("Location: ../"); // Jika gagal proteksi, naik satu level
+    header("Location: ../"); 
     exit();
 }
 
-require_once(__DIR__ . '/../../koneksi.php');
+// 2. KONEKSI (DIUBAH KE ../ AGAR SESUAI FOLDER API)
+require_once(__DIR__ . '/../koneksi.php');
 
 $id_murid = $_COOKIE['user_id'];
 $username = $_COOKIE['user_username'] ?? 'Siswa';
 
-// 2. AMBIL DATA JADWAL
+// 3. AMBIL DATA JADWAL
 $sql_jadwal = "SELECT j.*, u.username as nama_guru 
                FROM `jadwal` j 
                JOIN `users` u ON j.`id_guru` = u.`id` 
@@ -34,7 +35,7 @@ $data_j = mysqli_fetch_assoc($res_jadwal);
     <nav class="bg-indigo-900 shadow-xl px-6 py-4 flex justify-between items-center mb-6 border-b-4 border-yellow-400 sticky top-0 z-50 text-white font-black italic uppercase">
         <div class="flex items-center gap-3">
             <i class="fas fa-music text-yellow-400"></i>
-            <h1 class="tracking-tighter">Student Room</h1>
+            <h1 class="tracking-tighter uppercase">Student Room</h1>
         </div>
         
         <a href="../" class="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-xl text-[10px] font-black transition shadow-lg flex items-center gap-2">
@@ -45,13 +46,13 @@ $data_j = mysqli_fetch_assoc($res_jadwal);
     <div class="max-w-4xl mx-auto px-4">
         <div class="bg-white p-8 rounded-[2.5rem] shadow-xl mb-10 border-l-[12px] border-indigo-600 flex flex-col md:flex-row justify-between items-center gap-6">
             <div>
-                <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Selamat Belajar,</p>
-                <h2 class="text-4xl font-black text-slate-800 italic leading-none mb-3"><?php echo $username; ?></h2>
-                <span class="bg-indigo-100 text-indigo-700 px-3 py-1 rounded-full text-[10px] font-black uppercase"><?php echo $data_j['alat_musik'] ?? 'Vokal'; ?></span>
+                <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1 leading-none">Selamat Belajar,</p>
+                <h2 class="text-4xl font-black text-slate-800 italic leading-none mb-3 uppercase tracking-tighter"><?php echo $username; ?></h2>
+                <span class="bg-indigo-100 text-indigo-700 px-3 py-1 rounded-full text-[10px] font-black uppercase"><?php echo $data_j['alat_musik'] ?? 'General Music'; ?></span>
             </div>
             <div class="bg-slate-50 p-5 rounded-3xl border-2 border-dashed border-slate-200 text-right">
-                <p class="text-[9px] font-black text-slate-400 uppercase tracking-widest leading-none mb-1">Guru Pengajar</p>
-                <p class="text-xl font-black text-indigo-900 italic uppercase"><?php echo $data_j['nama_guru'] ?? 'Guru Arca'; ?></p>
+                <p class="text-[9px] font-black text-slate-400 uppercase leading-none mb-1">Guru Pengajar</p>
+                <p class="text-xl font-black text-indigo-900 italic uppercase"><?php echo $data_j['nama_guru'] ?? 'Guru Smart Arca'; ?></p>
             </div>
         </div>
 
@@ -63,6 +64,11 @@ $data_j = mysqli_fetch_assoc($res_jadwal);
             $sql_riwayat = "SELECT * FROM `absensi` WHERE `id_jadwal` = '$id_j_murid' ORDER BY `tanggal` DESC";
             $res_riwayat = mysqli_query($conn, $sql_riwayat);
 
+            if(mysqli_num_rows($res_riwayat) == 0):
+            ?>
+                <div class="text-center p-10 bg-white rounded-[2rem] text-slate-300 font-bold uppercase italic">Belum ada riwayat pertemuan.</div>
+            <?php 
+            endif;
             while($h = mysqli_fetch_assoc($res_riwayat)): 
             ?>
             <div class="bg-white rounded-[2.5rem] shadow-xl border border-slate-100 p-8">
