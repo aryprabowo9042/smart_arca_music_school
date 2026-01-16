@@ -23,17 +23,18 @@ if (isset($_POST['absen'])) {
     $selesai = $_POST['jam_selesai'];
     $id_edit = $_POST['id_edit'] ?? '';
 
+    // Pastikan koneksi menggunakan database yang benar
     if (!empty($id_edit)) {
-        // PERBAIKAN QUERY UPDATE BARIS 41
-        $sql = "UPDATE absensi SET 
-                nominal_bayar = '$nom', 
-                materi_les = '$materi', 
-                refleksi_guru = '$refleksi', 
-                jam_mulai = '$mulai', 
-                jam_selesai = '$selesai' 
-                WHERE id = '$id_edit'";
+        // BARIS 40-41: QUERY UPDATE DENGAN BACKTICKS (``) AGAR AMAN
+        $sql = "UPDATE `absensi` SET 
+                `nominal_bayar` = '$nom', 
+                `materi_les` = '$materi', 
+                `refleksi_guru` = '$refleksi', 
+                `jam_mulai` = '$mulai', 
+                `jam_selesai` = '$selesai' 
+                WHERE `id` = '$id_edit'";
     } else {
-        $sql = "INSERT INTO absensi (id_jadwal, tanggal, nominal_bayar, materi_les, refleksi_guru, jam_mulai, jam_selesai) 
+        $sql = "INSERT INTO `absensi` (`id_jadwal`, `tanggal`, `nominal_bayar`, `materi_les`, `refleksi_guru`, `jam_mulai`, `jam_selesai`) 
                 VALUES ('$id_jadwal', '$tgl', '$nom', '$materi', '$refleksi', '$mulai', '$selesai')";
     }
     
@@ -41,8 +42,8 @@ if (isset($_POST['absen'])) {
         header("Location: index.php"); 
         exit();
     } else {
-        // Memberikan info error yang lebih jelas jika gagal
-        die("Error Database: " . mysqli_error($conn));
+        // Jika masih error, ini akan memunculkan pesan "Kenapa" gagalnya
+        die("Error SQL: " . mysqli_error($conn)); 
     }
 }
 
@@ -56,28 +57,26 @@ $total_hak = floor(($res_saldo['total'] ?? 0) * 0.5);
 <html lang="id">
 <head>
     <meta charset="UTF-8">
-    <title>Guru Dashboard - Smart Arca</title>
+    <title>Teacher Dashboard - Smart Arca</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;800&display=swap" rel="stylesheet">
     <style>body { font-family: 'Plus Jakarta Sans', sans-serif; }</style>
 </head>
 <body class="bg-slate-50 min-h-screen pb-20">
-
     <nav class="bg-indigo-900 shadow-xl px-6 py-4 flex justify-between items-center mb-6 border-b-4 border-yellow-400 sticky top-0 z-50 text-white">
-        <div class="flex items-center gap-3">
-            <h1 class="font-black text-lg italic uppercase tracking-tighter">Teacher Journal</h1>
-        </div>
-        <a href="../logout.php" class="bg-red-500 hover:bg-red-600 text-white w-10 h-10 rounded-xl flex items-center justify-center transition shadow-lg">
+        <h1 class="font-black text-lg italic uppercase tracking-tighter">Teacher Journal</h1>
+        <a href="../logout.php" class="bg-red-500 hover:bg-red-600 text-white w-10 h-10 rounded-xl flex items-center justify-center shadow-lg transition">
             <i class="fas fa-sign-out-alt"></i>
         </a>
     </nav>
 
     <div class="max-w-6xl mx-auto px-4">
-        
-        <div class="bg-white p-6 rounded-[2rem] shadow-lg mb-8 border-l-8 border-indigo-600">
-            <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest leading-none mb-2">Honor (50%)</p>
-            <h2 class="text-3xl font-black text-slate-800 italic leading-none">Rp <?php echo number_format($total_hak, 0, ',', '.'); ?></h2>
+        <div class="bg-white p-6 rounded-[2rem] shadow-lg mb-8 border-l-8 border-indigo-600 flex justify-between items-center">
+            <div>
+                <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest leading-none mb-2">Honor (50%)</p>
+                <h2 class="text-3xl font-black text-slate-800 italic">Rp <?php echo number_format($total_hak, 0, ',', '.'); ?></h2>
+            </div>
         </div>
 
         <div class="space-y-6">
@@ -95,7 +94,6 @@ $total_hak = floor(($res_saldo['total'] ?? 0) * 0.5);
                 $absen_id = $data_a['id'] ?? '';
                 $is_editing = (isset($_GET['edit_id']) && $_GET['edit_id'] == $absen_id);
             ?>
-            
             <div class="bg-white rounded-[2.5rem] shadow-xl border border-slate-100 p-8">
                 <div class="flex justify-between items-start mb-6">
                     <div>
