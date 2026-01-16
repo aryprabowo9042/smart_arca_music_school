@@ -11,7 +11,7 @@ $id_guru = $_COOKIE['user_id'];
 $username = $_COOKIE['user_username'] ?? 'Guru';
 
 // ==========================================
-// 2. LOGIKA SIMPAN & UPDATE (SINKRON TIDB)
+// 2. LOGIKA SIMPAN (BARIS 40 FIX)
 // ==========================================
 if (isset($_POST['absen'])) {
     $id_jadwal = $_POST['id_jadwal'];
@@ -24,7 +24,7 @@ if (isset($_POST['absen'])) {
     $id_edit = $_POST['id_edit'] ?? '';
 
     if (!empty($id_edit)) {
-        // PERBAIKAN: Menggunakan backticks agar TiDB tidak bingung dengan nama kolom
+        // BARIS 40: QUERY UPDATE EKSPLISIT
         $sql = "UPDATE `absensi` SET 
                 `nominal_bayar` = '$nom', 
                 `materi_les` = '$materi', 
@@ -41,13 +41,12 @@ if (isset($_POST['absen'])) {
         header("Location: index.php"); 
         exit();
     } else {
-        // Jika masih error, ini akan memunculkan pesan "Kenapa" gagalnya secara teknis
         die("Fatal Error TiDB: " . mysqli_error($conn)); 
     }
 }
 
 // 3. HITUNG SALDO GURU
-$q_saldo = mysqli_query($conn, "SELECT SUM(nominal_bayar) as total FROM absensi a JOIN jadwal j ON a.id_jadwal = j.id WHERE j.id_guru = '$id_guru'");
+$q_saldo = mysqli_query($conn, "SELECT SUM(`nominal_bayar`) as total FROM `absensi` a JOIN `jadwal` j ON a.`id_jadwal` = j.`id` WHERE j.`id_guru` = '$id_guru'");
 $res_saldo = mysqli_fetch_assoc($q_saldo);
 $total_hak = floor(($res_saldo['total'] ?? 0) * 0.5);
 ?>
@@ -69,20 +68,22 @@ $total_hak = floor(($res_saldo['total'] ?? 0) * 0.5);
     </nav>
 
     <div class="max-w-4xl mx-auto px-4">
-        <div class="bg-white p-6 rounded-[2rem] shadow-lg mb-8 border-l-8 border-indigo-600">
-            <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest leading-none mb-2">Estimasi Honor (50%)</p>
-            <h2 class="text-3xl font-black text-slate-800 italic">Rp <?php echo number_format($total_hak, 0, ',', '.'); ?></h2>
+        <div class="bg-white p-6 rounded-[2rem] shadow-lg mb-8 border-l-8 border-indigo-600 flex justify-between items-center">
+            <div>
+                <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest leading-none mb-2">Estimasi Honor (50%)</p>
+                <h2 class="text-3xl font-black text-slate-800 italic">Rp <?php echo number_format($total_hak, 0, ',', '.'); ?></h2>
+            </div>
         </div>
 
         <div class="space-y-6">
             <?php 
-            $sql_j = "SELECT j.*, u.username as nama_murid FROM jadwal j JOIN users u ON j.id_murid = u.id WHERE j.id_guru = '$id_guru' ORDER BY FIELD(hari, 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu', 'Minggu'), jam ASC";
+            $sql_j = "SELECT j.*, u.username as nama_murid FROM `jadwal` j JOIN `users` u ON j.`id_murid` = u.`id` WHERE j.`id_guru` = '$id_guru' ORDER BY FIELD(`hari`, 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu', 'Minggu'), `jam` ASC";
             $res_j = mysqli_query($conn, $sql_j);
             
             while($r = mysqli_fetch_assoc($res_j)): 
                 $id_jadwal = $r['id'];
                 $tgl_skrg = date('Y-m-d');
-                $cek_absen = mysqli_query($conn, "SELECT * FROM absensi WHERE id_jadwal = '$id_jadwal' AND tanggal = '$tgl_skrg'");
+                $cek_absen = mysqli_query($conn, "SELECT * FROM `absensi` WHERE `id_jadwal` = '$id_jadwal' AND `tanggal` = '$tgl_skrg'");
                 $data_a = mysqli_fetch_assoc($cek_absen);
                 
                 $is_done = ($data_a !== null);
@@ -94,10 +95,10 @@ $total_hak = floor(($res_saldo['total'] ?? 0) * 0.5);
                     <div>
                         <span class="bg-indigo-100 text-indigo-700 px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-widest"><?php echo $r['hari']; ?></span>
                         <h3 class="text-3xl font-black text-slate-800 uppercase italic mt-2 leading-none"><?php echo $r['nama_murid']; ?></h3>
-                        <p class="text-slate-400 font-bold text-xs italic mt-1"><?php echo $r['alat_musik']; ?> • <?php echo date('H:i', strtotime($r['jam'])); ?> WIB</p>
+                        <p class="text-slate-400 font-bold text-xs mt-1 italic"><?php echo $r['alat_musik']; ?> • <?php echo date('H:i', strtotime($r['jam'])); ?> WIB</p>
                     </div>
                     <?php if($is_done && !$is_editing): ?>
-                        <a href="index.php?edit_id=<?php echo $absen_id; ?>" class="bg-yellow-400 text-red-700 px-4 py-2 rounded-xl text-[10px] font-black uppercase shadow-md transition">Edit Data <i class="fas fa-edit ml-1"></i></a>
+                        <a href="index.php?edit_id=<?php echo $absen_id; ?>" class="bg-yellow-400 text-red-700 px-4 py-2 rounded-xl text-[10px] font-black uppercase shadow-md transition hover:bg-indigo-600 hover:text-white">Edit <i class="fas fa-edit ml-1"></i></a>
                     <?php endif; ?>
                 </div>
 
@@ -116,7 +117,7 @@ $total_hak = floor(($res_saldo['total'] ?? 0) * 0.5);
 
                         <div class="space-y-4">
                             <textarea name="materi_les" rows="2" class="w-full p-3 rounded-xl border-2 border-white text-xs font-bold shadow-sm" placeholder="Materi yang diajarkan..." required><?php echo $data_a['materi_les'] ?? ''; ?></textarea>
-                            <textarea name="refleksi_guru" rows="2" class="w-full p-3 rounded-xl border-2 border-white text-xs font-bold shadow-sm" placeholder="Refleksi..." required><?php echo $data_a['refleksi_guru'] ?? ''; ?></textarea>
+                            <textarea name="refleksi_guru" rows="2" class="w-full p-3 rounded-xl border-2 border-white text-xs font-bold shadow-sm" placeholder="Refleksi Guru..." required><?php echo $data_a['refleksi_guru'] ?? ''; ?></textarea>
                             <button type="submit" name="absen" class="w-full bg-indigo-600 text-white font-black py-4 rounded-xl uppercase text-[10px] shadow-lg hover:bg-indigo-700 transition">Simpan Jurnal</button>
                         </div>
                     </form>
