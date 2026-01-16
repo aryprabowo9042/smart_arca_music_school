@@ -5,14 +5,13 @@ if (!isset($_COOKIE['user_role']) || $_COOKIE['user_role'] != 'guru') {
     exit();
 }
 
-// Pastikan koneksi ke database 'test' sudah benar di file ini
 require_once(__DIR__ . '/../koneksi.php');
 
 $id_guru = $_COOKIE['user_id'];
 $username = $_COOKIE['user_username'] ?? 'Guru';
 
 // ==========================================
-// 2. LOGIKA SIMPAN (DETEKSI TIAP SISWA)
+// 2. LOGIKA SIMPAN & UPDATE (SINKRON TIDB)
 // ==========================================
 if (isset($_POST['absen'])) {
     $id_jadwal = $_POST['id_jadwal'];
@@ -25,7 +24,7 @@ if (isset($_POST['absen'])) {
     $id_edit = $_POST['id_edit'] ?? '';
 
     if (!empty($id_edit)) {
-        // UPDATE JURNAL LAMA
+        // PERBAIKAN: Menggunakan backticks agar TiDB tidak bingung dengan nama kolom
         $sql = "UPDATE `absensi` SET 
                 `nominal_bayar` = '$nom', 
                 `materi_les` = '$materi', 
@@ -34,7 +33,6 @@ if (isset($_POST['absen'])) {
                 `jam_selesai` = '$selesai' 
                 WHERE `id` = '$id_edit'";
     } else {
-        // INPUT JURNAL BARU
         $sql = "INSERT INTO `absensi` (`id_jadwal`, `tanggal`, `nominal_bayar`, `materi_les`, `refleksi_guru`, `jam_mulai`, `jam_selesai`) 
                 VALUES ('$id_jadwal', '$tgl', '$nom', '$materi', '$refleksi', '$mulai', '$selesai')";
     }
@@ -43,11 +41,12 @@ if (isset($_POST['absen'])) {
         header("Location: index.php"); 
         exit();
     } else {
-        die("Error TiDB: " . mysqli_error($conn));
+        // Jika masih error, ini akan memunculkan pesan "Kenapa" gagalnya secara teknis
+        die("Fatal Error TiDB: " . mysqli_error($conn)); 
     }
 }
 
-// 3. PERHITUNGAN SALDO GURU
+// 3. HITUNG SALDO GURU
 $q_saldo = mysqli_query($conn, "SELECT SUM(nominal_bayar) as total FROM absensi a JOIN jadwal j ON a.id_jadwal = j.id WHERE j.id_guru = '$id_guru'");
 $res_saldo = mysqli_fetch_assoc($q_saldo);
 $total_hak = floor(($res_saldo['total'] ?? 0) * 0.5);
@@ -64,26 +63,18 @@ $total_hak = floor(($res_saldo['total'] ?? 0) * 0.5);
     <style>body { font-family: 'Plus Jakarta Sans', sans-serif; }</style>
 </head>
 <body class="bg-slate-50 min-h-screen pb-20">
-
     <nav class="bg-indigo-900 shadow-xl px-6 py-4 flex justify-between items-center mb-6 border-b-4 border-yellow-400 sticky top-0 z-50 text-white">
-        <div class="flex items-center gap-3">
-            <h1 class="font-black text-lg italic uppercase tracking-tighter">Teacher Room</h1>
-        </div>
-        <a href="../logout.php" class="bg-red-500 hover:bg-red-600 text-white w-10 h-10 rounded-xl flex items-center justify-center transition shadow-lg active:scale-90">
-            <i class="fas fa-sign-out-alt"></i>
-        </a>
+        <h1 class="font-black text-lg italic uppercase tracking-tighter">Journal System</h1>
+        <a href="../logout.php" class="bg-red-500 hover:bg-red-600 text-white w-10 h-10 rounded-xl flex items-center justify-center shadow-lg transition"><i class="fas fa-sign-out-alt"></i></a>
     </nav>
 
     <div class="max-w-4xl mx-auto px-4">
-        
-        <div class="bg-white p-8 rounded-[2.5rem] shadow-xl mb-10 border-l-[12px] border-indigo-600 flex justify-between items-center">
-            <div>
-                <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Honor Terkumpul (50%)</p>
-                <h2 class="text-4xl font-black text-slate-800 italic leading-none">Rp <?php echo number_format($total_hak, 0, ',', '.'); ?></h2>
-            </div>
+        <div class="bg-white p-6 rounded-[2rem] shadow-lg mb-8 border-l-8 border-indigo-600">
+            <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest leading-none mb-2">Estimasi Honor (50%)</p>
+            <h2 class="text-3xl font-black text-slate-800 italic">Rp <?php echo number_format($total_hak, 0, ',', '.'); ?></h2>
         </div>
 
-        <div class="space-y-8">
+        <div class="space-y-6">
             <?php 
             $sql_j = "SELECT j.*, u.username as nama_murid FROM jadwal j JOIN users u ON j.id_murid = u.id WHERE j.id_guru = '$id_guru' ORDER BY FIELD(hari, 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu', 'Minggu'), jam ASC";
             $res_j = mysqli_query($conn, $sql_j);
@@ -98,16 +89,15 @@ $total_hak = floor(($res_saldo['total'] ?? 0) * 0.5);
                 $absen_id = $data_a['id'] ?? '';
                 $is_editing = (isset($_GET['edit_id']) && $_GET['edit_id'] == $absen_id);
             ?>
-            
             <div class="bg-white rounded-[2.5rem] shadow-xl border border-slate-100 p-8">
                 <div class="flex justify-between items-start mb-6">
                     <div>
-                        <span class="bg-indigo-50 text-indigo-600 px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest"><?php echo $r['hari']; ?></span>
+                        <span class="bg-indigo-100 text-indigo-700 px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-widest"><?php echo $r['hari']; ?></span>
                         <h3 class="text-3xl font-black text-slate-800 uppercase italic mt-2 leading-none"><?php echo $r['nama_murid']; ?></h3>
-                        <p class="text-slate-400 font-bold text-xs uppercase italic mt-2"><?php echo $r['alat_musik']; ?> • <?php echo date('H:i', strtotime($r['jam'])); ?> WIB</p>
+                        <p class="text-slate-400 font-bold text-xs italic mt-1"><?php echo $r['alat_musik']; ?> • <?php echo date('H:i', strtotime($r['jam'])); ?> WIB</p>
                     </div>
                     <?php if($is_done && !$is_editing): ?>
-                        <a href="index.php?edit_id=<?php echo $absen_id; ?>" class="bg-yellow-400 text-red-700 px-4 py-2 rounded-xl text-[10px] font-black uppercase shadow-md hover:bg-indigo-600 hover:text-white transition">Edit <i class="fas fa-edit ml-1"></i></a>
+                        <a href="index.php?edit_id=<?php echo $absen_id; ?>" class="bg-yellow-400 text-red-700 px-4 py-2 rounded-xl text-[10px] font-black uppercase shadow-md transition">Edit Data <i class="fas fa-edit ml-1"></i></a>
                     <?php endif; ?>
                 </div>
 
@@ -118,36 +108,27 @@ $total_hak = floor(($res_saldo['total'] ?? 0) * 0.5);
 
                         <div class="space-y-4">
                             <div class="grid grid-cols-2 gap-3">
-                                <div class="space-y-1">
-                                    <label class="text-[9px] font-black text-slate-400 uppercase ml-1">Mulai</label>
-                                    <input type="time" name="jam_mulai" value="<?php echo $data_a['jam_mulai'] ?? ''; ?>" class="w-full p-3 rounded-xl border-2 border-white text-xs font-bold shadow-sm" required>
-                                </div>
-                                <div class="space-y-1">
-                                    <label class="text-[9px] font-black text-slate-400 uppercase ml-1">Selesai</label>
-                                    <input type="time" name="jam_selesai" value="<?php echo $data_a['jam_selesai'] ?? ''; ?>" class="w-full p-3 rounded-xl border-2 border-white text-xs font-bold shadow-sm" required>
-                                </div>
+                                <input type="time" name="jam_mulai" value="<?php echo $data_a['jam_mulai'] ?? ''; ?>" class="w-full p-3 rounded-xl border-2 border-white text-xs font-bold shadow-sm" required>
+                                <input type="time" name="jam_selesai" value="<?php echo $data_a['jam_selesai'] ?? ''; ?>" class="w-full p-3 rounded-xl border-2 border-white text-xs font-bold shadow-sm" required>
                             </div>
-                            <div class="space-y-1">
-                                <label class="text-[9px] font-black text-slate-400 uppercase ml-1">Nominal Bayar (Rp)</label>
-                                <input type="number" name="nominal_bayar" value="<?php echo $data_a['nominal_bayar'] ?? ''; ?>" class="w-full p-3 rounded-xl border-2 border-white text-xs font-bold shadow-sm" placeholder="75000" required>
-                            </div>
+                            <input type="number" name="nominal_bayar" value="<?php echo $data_a['nominal_bayar'] ?? ''; ?>" class="w-full p-3 rounded-xl border-2 border-white text-xs font-bold shadow-sm" placeholder="Nominal SPP (Rp)" required>
                         </div>
 
                         <div class="space-y-4">
-                            <textarea name="materi_les" rows="2" class="w-full p-3 rounded-xl border-2 border-white text-xs font-bold shadow-sm" placeholder="Materi Belajar..." required><?php echo $data_a['materi_les'] ?? ''; ?></textarea>
-                            <textarea name="refleksi_guru" rows="2" class="w-full p-3 rounded-xl border-2 border-white text-xs font-bold shadow-sm" placeholder="Refleksi Guru..." required><?php echo $data_a['refleksi_guru'] ?? ''; ?></textarea>
+                            <textarea name="materi_les" rows="2" class="w-full p-3 rounded-xl border-2 border-white text-xs font-bold shadow-sm" placeholder="Materi yang diajarkan..." required><?php echo $data_a['materi_les'] ?? ''; ?></textarea>
+                            <textarea name="refleksi_guru" rows="2" class="w-full p-3 rounded-xl border-2 border-white text-xs font-bold shadow-sm" placeholder="Refleksi..." required><?php echo $data_a['refleksi_guru'] ?? ''; ?></textarea>
                             <button type="submit" name="absen" class="w-full bg-indigo-600 text-white font-black py-4 rounded-xl uppercase text-[10px] shadow-lg hover:bg-indigo-700 transition">Simpan Jurnal</button>
                         </div>
                     </form>
                 <?php else: ?>
-                    <div class="grid grid-cols-1 md:grid-cols-3 gap-8 mt-6 border-t pt-8 border-slate-100">
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-8 mt-6 border-t pt-6 border-slate-100">
                         <div>
-                            <p class="text-[9px] font-black text-slate-400 uppercase tracking-widest text-indigo-600">Durasi</p>
-                            <p class="text-sm font-black text-slate-800 italic"><?php echo date('H:i', strtotime($data_a['jam_mulai'] ?? '00:00'))." - ".date('H:i', strtotime($data_a['jam_selesai'] ?? '00:00')); ?> WIB</p>
+                            <p class="text-[9px] font-black text-slate-400 uppercase tracking-widest text-indigo-600">Jam Les</p>
+                            <p class="text-sm font-bold text-slate-800 italic"><?php echo date('H:i', strtotime($data_a['jam_mulai'] ?? '00:00'))." - ".date('H:i', strtotime($data_a['jam_selesai'] ?? '00:00')); ?> WIB</p>
                         </div>
                         <div>
                             <p class="text-[9px] font-black text-slate-400 uppercase tracking-widest text-indigo-600">Materi</p>
-                            <p class="text-xs font-bold text-slate-700 leading-relaxed italic uppercase"><?php echo htmlspecialchars($data_a['materi_les'] ?? ''); ?></p>
+                            <p class="text-xs font-bold text-slate-700 leading-relaxed italic"><?php echo htmlspecialchars($data_a['materi_les'] ?? ''); ?></p>
                         </div>
                         <div>
                             <p class="text-[9px] font-black text-slate-400 uppercase tracking-widest text-indigo-600">Refleksi</p>
