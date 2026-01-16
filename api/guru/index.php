@@ -11,8 +11,10 @@ $id_guru = $_COOKIE['user_id'];
 $username = $_COOKIE['user_username'] ?? 'Guru';
 
 // ==========================================
-// 2. PROSES ABSENSI (SIMPAN & UPDATE)
+// 2. PROSES LOGIKA (ABSENSI & PENARIKAN)
 // ==========================================
+
+// A. Simpan / Edit Absensi
 if (isset($_POST['absen'])) {
     $id_jadwal = $_POST['id_jadwal'];
     $tgl = date('Y-m-d');
@@ -20,27 +22,36 @@ if (isset($_POST['absen'])) {
     $id_edit = $_POST['id_edit'] ?? '';
 
     if (!empty($id_edit)) {
-        // Update absensi yang sudah ada
-        $sql = "UPDATE absensi SET nominal_bayar='$nom' WHERE id='$id_edit'";
+        mysqli_query($conn, "UPDATE absensi SET nominal_bayar='$nom' WHERE id='$id_edit'");
     } else {
-        // Simpan absensi baru
-        $sql = "INSERT INTO absensi (id_jadwal, tanggal, nominal_bayar) VALUES ('$id_jadwal', '$tgl', '$nom')";
+        mysqli_query($conn, "INSERT INTO absensi (id_jadwal, tanggal, nominal_bayar) VALUES ('$id_jadwal', '$tgl', '$nom')");
     }
-    
-    mysqli_query($conn, $sql);
     header("Location: index.php"); exit();
 }
 
-// Data Edit Absensi (Jika tombol edit diklik)
-$edit_absensi = ['id' => '', 'id_jadwal' => '', 'nominal' => ''];
-if (isset($_GET['edit_absen'])) {
-    $id_a = mysqli_real_escape_string($conn, $_GET['edit_absen']);
-    $res_a = mysqli_query($conn, "SELECT * FROM absensi WHERE id = '$id_a'");
-    if($res_a && mysqli_num_rows($res_a) > 0) {
-        $data_a = mysqli_fetch_assoc($res_a);
-        $edit_absensi = ['id' => $data_a['id'], 'id_jadwal' => $data_a['id_jadwal'], 'nominal' => $data_a['nominal_bayar']];
-    }
+// B. Ajukan Penarikan Saldo (Konfirmasi ke Admin)
+if (isset($_POST['tarik_saldo'])) {
+    $nominal_tarik = $_POST['total_hak'];
+    $ket = "Penarikan Honor oleh " . $username;
+    // Status konfirmasi 0 artinya menunggu persetujuan admin di tabel keuangan
+    mysqli_query($conn, "INSERT INTO keuangan (tanggal, nama_pelaku, keterangan, jenis, nominal, status_konfirmasi) 
+                         VALUES (CURDATE(), '$username', '$ket', 'keluar', '$nominal_tarik', 0)");
+    header("Location: index.php?msg=pending"); exit();
 }
+
+// ==========================================
+// 3. PERHITUNGAN SALDO GURU (50%)
+// ==========================================
+// Menghitung total SPP yang dikumpulkan guru ini dari tabel absensi
+$q_saldo = mysqli_query($conn, "SELECT SUM(a.nominal_bayar) as total FROM absensi a 
+                                JOIN jadwal j ON a.id_jadwal = j.id 
+                                WHERE j.id_guru = '$id_guru'");
+$res_saldo = mysqli_fetch_assoc($q_saldo);
+$total_hak = FLOOR(($res_saldo['total'] ?? 0) * 0.5);
+
+// Cek apakah ada penarikan yang sedang pending
+$q_pending = mysqli_query($conn, "SELECT id FROM keuangan WHERE nama_pelaku = '$username' AND status_konfirmasi = 0");
+$is_pending = mysqli_num_rows($q_pending) > 0;
 ?>
 <!DOCTYPE html>
 <html lang="id">
@@ -55,52 +66,56 @@ if (isset($_GET['edit_absen'])) {
 </head>
 <body class="bg-slate-50 min-h-screen pb-20">
 
-    <nav class="bg-indigo-900 shadow-xl px-6 py-4 flex justify-between items-center mb-10 border-b-4 border-yellow-400 sticky top-0 z-50">
+    <nav class="bg-indigo-900 shadow-xl px-6 py-4 flex justify-between items-center mb-6 border-b-4 border-yellow-400 sticky top-0 z-50">
         <div class="flex items-center gap-3">
-            <div class="bg-white/10 w-10 h-10 rounded-xl flex items-center justify-center text-white">
-                <i class="fas fa-chalkboard-teacher"></i>
-            </div>
-            <div>
-                <h1 class="text-white font-black text-lg italic tracking-tighter leading-none uppercase">Teacher Room</h1>
-                <p class="text-[8px] text-indigo-300 font-bold uppercase tracking-widest mt-1">Smart Arca Music School</p>
-            </div>
+            <div class="bg-white/10 w-10 h-10 rounded-xl flex items-center justify-center text-white"><i class="fas fa-music"></i></div>
+            <h1 class="text-white font-black text-lg italic uppercase tracking-tighter">Teacher Panel</h1>
         </div>
-
-        <div class="flex items-center gap-4">
-            <div class="hidden md:block text-right">
-                <p class="text-[10px] text-indigo-300 font-bold uppercase leading-none">Selamat Mengajar,</p>
-                <p class="text-white font-black text-sm italic uppercase"><?php echo $username; ?></p>
-            </div>
-            <a href="../logout.php" class="bg-red-500 hover:bg-red-600 text-white w-10 h-10 rounded-xl flex items-center justify-center transition shadow-lg transform active:scale-90">
-                <i class="fas fa-sign-out-alt"></i>
-            </a>
-        </div>
+        <a href="../logout.php" class="bg-red-500 text-white w-10 h-10 rounded-xl flex items-center justify-center shadow-lg"><i class="fas fa-sign-out-alt"></i></a>
     </nav>
 
     <div class="max-w-6xl mx-auto px-4">
         
-        <div class="bg-indigo-600 rounded-[2.5rem] p-8 mb-10 text-white shadow-2xl relative overflow-hidden">
-            <div class="relative z-10">
-                <h2 class="text-2xl font-black italic uppercase leading-none">Jadwal Mengajar Anda</h2>
-                <p class="text-indigo-100 text-xs mt-2 font-medium opacity-80 uppercase tracking-widest">Daftar seluruh jadwal pertemuan kursus</p>
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+            <div class="md:col-span-2 bg-white p-8 rounded-[2.5rem] shadow-xl border-l-[12px] border-indigo-600 flex justify-between items-center">
+                <div>
+                    <p class="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-1">Estimasi Honor Anda (50%)</p>
+                    <h2 class="text-4xl font-black text-slate-800 italic">Rp <?php echo number_format($total_hak, 0, ',', '.'); ?></h2>
+                </div>
+                <?php if($total_hak > 0 && !$is_pending): ?>
+                    <form method="POST">
+                        <input type="hidden" name="total_hak" value="<?php echo $total_hak; ?>">
+                        <button type="submit" name="tarik_saldo" class="bg-green-500 hover:bg-green-600 text-white px-6 py-3 rounded-2xl font-black text-xs uppercase shadow-lg transition active:scale-95">Tarik Saldo</button>
+                    </form>
+                <?php elseif($is_pending): ?>
+                    <span class="bg-yellow-100 text-yellow-700 px-6 py-3 rounded-2xl font-black text-xs uppercase italic border-2 border-yellow-200">Menunggu Admin...</span>
+                <?php endif; ?>
             </div>
-            <i class="fas fa-music absolute -right-4 -bottom-4 text-white/10 text-9xl"></i>
+            <div class="bg-indigo-600 p-8 rounded-[2.5rem] shadow-xl text-white flex flex-col justify-center">
+                <p class="text-[10px] font-bold uppercase opacity-60">Guru Aktif</p>
+                <h3 class="text-xl font-black uppercase italic"><?php echo $username; ?></h3>
+            </div>
         </div>
 
-        <div class="bg-white rounded-[2.5rem] shadow-xl overflow-hidden border border-slate-100">
+        <div class="bg-white rounded-[2.5rem] shadow-2xl overflow-hidden border border-slate-100">
+            <div class="p-6 bg-slate-50 border-b flex justify-between items-center">
+                <h3 class="font-black text-slate-800 uppercase text-xs italic tracking-widest">Manajemen Kelas & Absensi</h3>
+                <?php if(isset($_GET['msg']) && $_GET['msg'] == 'pending'): ?>
+                    <span class="text-[9px] font-bold text-indigo-600 animate-pulse">Permintaan penarikan telah dikirim!</span>
+                <?php endif; ?>
+            </div>
             <div class="overflow-x-auto">
                 <table class="w-full text-sm text-left">
-                    <thead class="bg-slate-50 text-slate-400 text-[9px] uppercase font-black border-b tracking-widest">
+                    <thead class="bg-slate-50 text-slate-400 text-[9px] uppercase font-black border-b">
                         <tr>
-                            <th class="p-6">Waktu</th>
-                            <th class="p-6">Murid & Instrumen</th>
-                            <th class="p-6">Status Absensi</th>
-                            <th class="p-6 text-center">Tindakan</th>
+                            <th class="p-6">Jadwal</th>
+                            <th class="p-6">Siswa</th>
+                            <th class="p-6">Status SPP Hari Ini</th>
+                            <th class="p-6 text-center">Aksi</th>
                         </tr>
                     </thead>
                     <tbody class="divide-y divide-slate-50">
                         <?php 
-                        // Munculkan semua jadwal guru ini tanpa filter hari
                         $sql_j = "SELECT j.*, u.username as nama_murid 
                                   FROM jadwal j 
                                   JOIN users u ON j.id_murid = u.id 
@@ -111,49 +126,47 @@ if (isset($_GET['edit_absen'])) {
                         while($r = mysqli_fetch_assoc($res_j)): 
                             $id_jadwal = $r['id'];
                             $tgl_skrg = date('Y-m-d');
-                            
-                            // Cek apakah hari ini sudah absen
                             $cek_absen = mysqli_query($conn, "SELECT id, nominal_bayar FROM absensi WHERE id_jadwal = '$id_jadwal' AND tanggal = '$tgl_skrg'");
-                            $is_done = mysqli_num_rows($cek_absen) > 0;
                             $data_absen = mysqli_fetch_assoc($cek_absen);
+                            $is_done = ($data_absen != null);
                         ?>
-                        <tr class="hover:bg-indigo-50/30 transition group">
+                        <tr class="hover:bg-indigo-50/30 transition">
                             <td class="p-6">
                                 <p class="font-black text-slate-800 uppercase text-xs mb-1"><?php echo $r['hari']; ?></p>
-                                <p class="text-[10px] font-bold text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded-md inline-block"><?php echo date('H:i', strtotime($r['jam'])); ?> WIB</p>
+                                <span class="text-[10px] font-bold text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded-md"><?php echo date('H:i', strtotime($r['jam'])); ?> WIB</span>
                             </td>
                             <td class="p-6">
                                 <p class="font-black text-slate-800 uppercase text-sm leading-none"><?php echo $r['nama_murid']; ?></p>
-                                <p class="text-[9px] text-slate-400 font-bold uppercase mt-1 italic tracking-widest"><?php echo $r['alat_musik']; ?></p>
+                                <p class="text-[9px] text-slate-400 font-bold uppercase mt-1 italic"><?php echo $r['alat_musik']; ?></p>
                             </td>
                             <td class="p-6">
                                 <?php if($is_done): ?>
-                                    <div class="flex items-center gap-2">
-                                        <span class="bg-green-100 text-green-600 px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-tighter italic">Selesai Absen</span>
-                                        <span class="text-[10px] font-bold text-slate-400">Rp <?php echo number_format($data_absen['nominal_bayar']); ?></span>
+                                    <div class="flex flex-col">
+                                        <span class="text-green-600 font-black text-[10px] uppercase italic">Terbayar</span>
+                                        <span class="text-slate-400 font-bold text-xs">Rp <?php echo number_format($data_absen['nominal_bayar']); ?></span>
                                     </div>
                                 <?php else: ?>
-                                    <span class="bg-slate-100 text-slate-400 px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-tighter italic">Belum Ada Sesi</span>
+                                    <span class="text-slate-300 font-bold text-[10px] uppercase italic">Belum Absen</span>
                                 <?php endif; ?>
                             </td>
                             <td class="p-6 text-center">
                                 <?php if(!$is_done): ?>
-                                    <form method="POST" class="flex items-center justify-center gap-2">
+                                    <form method="POST" class="flex gap-2 justify-center">
                                         <input type="hidden" name="id_jadwal" value="<?php echo $r['id']; ?>">
-                                        <input type="number" name="nominal_bayar" class="w-24 p-2 border-2 border-slate-100 rounded-lg text-xs font-bold focus:border-indigo-600 outline-none" placeholder="Nominal SPP" required>
-                                        <button type="submit" name="absen" class="bg-indigo-600 text-white px-4 py-2 rounded-lg text-[10px] font-black uppercase hover:bg-indigo-700 transition shadow-md">Kirim</button>
+                                        <input type="number" name="nominal_bayar" class="w-24 p-2 border-2 border-slate-100 rounded-lg text-xs font-bold focus:border-indigo-600 outline-none" placeholder="Nominal..." required>
+                                        <button type="submit" name="absen" class="bg-indigo-600 text-white px-4 py-2 rounded-lg text-[10px] font-black uppercase shadow-md">Kirim</button>
                                     </form>
                                 <?php else: ?>
-                                    <?php if(isset($_GET['edit_absen']) && $_GET['edit_absen'] == $data_absen['id']): ?>
-                                        <form method="POST" class="flex items-center justify-center gap-2">
+                                    <?php if(isset($_GET['edit_id']) && $_GET['edit_id'] == $data_absen['id']): ?>
+                                        <form method="POST" class="flex gap-2 justify-center">
                                             <input type="hidden" name="id_edit" value="<?php echo $data_absen['id']; ?>">
-                                            <input type="number" name="nominal_bayar" value="<?php echo $data_absen['nominal_bayar']; ?>" class="w-24 p-2 border-2 border-indigo-600 rounded-lg text-xs font-bold outline-none" required>
+                                            <input type="number" name="nominal_bayar" value="<?php echo $data_absen['nominal_bayar']; ?>" class="w-24 p-2 border-2 border-green-500 rounded-lg text-xs font-bold outline-none" required>
                                             <button type="submit" name="absen" class="bg-green-600 text-white px-4 py-2 rounded-lg text-[10px] font-black uppercase">Simpan</button>
-                                            <a href="index.php" class="text-slate-400 text-xs"><i class="fas fa-times"></i></a>
+                                            <a href="index.php" class="text-slate-400 p-2"><i class="fas fa-times"></i></a>
                                         </form>
                                     <?php else: ?>
-                                        <a href="index.php?edit_absen=<?php echo $data_absen['id']; ?>" class="inline-flex items-center gap-2 text-indigo-500 hover:text-indigo-700 font-black text-[10px] uppercase tracking-widest transition">
-                                            <i class="fas fa-edit"></i> Edit Absensi
+                                        <a href="index.php?edit_id=<?php echo $data_absen['id']; ?>" class="inline-block bg-yellow-400 text-yellow-900 px-4 py-2 rounded-lg text-[10px] font-black uppercase hover:bg-indigo-600 hover:text-white transition shadow-sm">
+                                            <i class="fas fa-edit mr-1"></i> Edit Data
                                         </a>
                                     <?php endif; ?>
                                 <?php endif; ?>
@@ -164,11 +177,6 @@ if (isset($_GET['edit_absen'])) {
                 </table>
             </div>
         </div>
-
-        <div class="mt-12 text-center">
-            <p class="text-slate-300 text-[9px] font-black uppercase tracking-[0.5em] italic">&copy; Teacher Dashboard - Smart Arca System</p>
-        </div>
     </div>
-
 </body>
 </html>
