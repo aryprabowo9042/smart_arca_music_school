@@ -1,6 +1,11 @@
 <?php
-// 1. KONEKSI (Disesuaikan karena koneksi.php ada di dalam folder api)
-require_once('koneksi.php');
+// 1. KONEKSI (Gunakan jalur absolut internal)
+$path_koneksi = __DIR__ . '/koneksi.php';
+if (file_exists($path_koneksi)) {
+    require_once($path_koneksi);
+} else {
+    die("File koneksi.php tidak ditemukan di: " . $path_koneksi);
+}
 
 // 2. PROSES LOGIN
 $error = '';
@@ -22,6 +27,8 @@ if (isset($_POST['login'])) {
         // Arahkan ke dashboard sesuai role
         if ($user['role'] == 'guru') {
             header("Location: guru/index.php");
+        } elseif ($user['role'] == 'admin') {
+            header("Location: ../admin/index.php"); // Sesuaikan jika folder admin di luar api
         } else {
             header("Location: murid/index.php");
         }
@@ -36,12 +43,10 @@ if (isset($_POST['login'])) {
 <html lang="id">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Login - Smart Arca</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;800&display=swap" rel="stylesheet">
-    <style>body { font-family: 'Plus Jakarta Sans', sans-serif; }</style>
 </head>
 <body class="bg-indigo-900 min-h-screen flex items-center justify-center p-4">
 
@@ -50,8 +55,8 @@ if (isset($_POST['login'])) {
             <div class="bg-yellow-400 w-16 h-16 rounded-2xl flex items-center justify-center mx-auto mb-4 text-indigo-900 text-2xl shadow-lg">
                 <i class="fas fa-music"></i>
             </div>
-            <h1 class="text-3xl font-black text-slate-800 uppercase italic tracking-tighter">Smart Arca</h1>
-            <p class="text-slate-400 font-bold text-[10px] uppercase tracking-widest">Login System</p>
+            <h1 class="text-3xl font-black text-slate-800 uppercase italic tracking-tighter leading-none">Smart Arca</h1>
+            <p class="text-slate-400 font-bold text-[9px] uppercase tracking-widest mt-2">Portal Masuk</p>
         </div>
 
         <?php if(!empty($error)): ?>
@@ -63,21 +68,19 @@ if (isset($_POST['login'])) {
         <form method="POST" class="space-y-6">
             <div>
                 <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-2 mb-2 block">Username</label>
-                <input type="text" name="username" class="w-full p-4 rounded-2xl bg-slate-50 border-2 border-slate-50 focus:border-indigo-600 outline-none font-bold italic" placeholder="Username" required>
+                <input type="text" name="username" class="w-full p-4 rounded-2xl bg-slate-50 border-2 border-slate-50 focus:border-indigo-600 outline-none font-bold" placeholder="Username" required>
             </div>
-
             <div>
                 <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-2 mb-2 block">Password</label>
                 <input type="password" name="password" class="w-full p-4 rounded-2xl bg-slate-50 border-2 border-slate-50 focus:border-indigo-600 outline-none font-bold" placeholder="••••••••" required>
             </div>
-
             <button type="submit" name="login" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-black py-4 rounded-2xl uppercase italic shadow-xl transition active:scale-95">
-                Masuk <i class="fas fa-arrow-right ml-2"></i>
+                Masuk Sistem <i class="fas fa-arrow-right ml-2"></i>
             </button>
         </form>
 
-        <div class="text-center mt-8">
-            <a href="../index.php" class="text-[10px] font-black text-indigo-400 uppercase tracking-widest hover:text-indigo-600">
+        <div class="text-center mt-10">
+            <a href="/" class="text-[10px] font-black text-indigo-400 uppercase tracking-widest hover:text-indigo-600 transition">
                 <i class="fas fa-chevron-left mr-1"></i> Kembali ke Beranda
             </a>
         </div>
