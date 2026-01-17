@@ -81,18 +81,22 @@ $saldo_bersih = ($total_les + $total_manual_masuk) - ($total_honor_lunas + $tota
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Keuangan Pusat - Smart Arca</title>
+    <title>Laporan Keuangan - Smart Arca</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;800&display=swap" rel="stylesheet">
-    <style>body { font-family: 'Plus Jakarta Sans', sans-serif; }</style>
+    <style>
+        body { font-family: 'Plus Jakarta Sans', sans-serif; }
+        /* Style agar tabel bisa di-scroll jika datanya banyak */
+        .table-container { max-height: 400px; overflow-y: auto; }
+    </style>
 </head>
 <body class="bg-slate-50 min-h-screen pb-20">
 
     <nav class="bg-red-800 text-white py-4 px-6 shadow-xl border-b-4 border-yellow-400 sticky top-0 z-50 flex justify-between items-center">
         <div class="flex items-center gap-3">
             <a href="index.php" class="hover:text-yellow-400 transition"><i class="fas fa-arrow-left"></i></a>
-            <h1 class="font-black italic uppercase tracking-tighter leading-none">Smart Arca Finance</h1>
+            <h1 class="font-black italic uppercase tracking-tighter leading-none text-lg">Smart Arca Finance</h1>
         </div>
         <div class="bg-red-900 px-4 py-1 rounded-full border border-red-700 text-[10px] font-black uppercase tracking-widest">
             Kas Bersih: Rp <?php echo number_format($saldo_bersih, 0, ',', '.'); ?>
@@ -105,19 +109,19 @@ $saldo_bersih = ($total_les + $total_manual_masuk) - ($total_honor_lunas + $tota
             <div class="bg-white p-8 rounded-[2.5rem] shadow-xl border-b-8 border-green-500">
                 <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1 leading-none">Total Pemasukan</p>
                 <h3 class="text-3xl font-black text-green-600 italic leading-none">Rp <?php echo number_format($total_les + $total_manual_masuk, 0, ',', '.'); ?></h3>
-                <p class="text-[9px] text-slate-400 mt-3 font-bold uppercase italic">SPP Les + Pendaftaran + Lainnya</p>
+                <p class="text-[9px] text-slate-400 mt-3 font-bold uppercase italic">SPP Les + Pendaftaran</p>
             </div>
             <div class="bg-white p-8 rounded-[2.5rem] shadow-xl border-b-8 border-red-600">
                 <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1 leading-none">Total Pengeluaran</p>
                 <h3 class="text-3xl font-black text-red-700 italic leading-none">Rp <?php echo number_format($total_honor_lunas + $total_operasional, 0, ',', '.'); ?></h3>
-                <p class="text-[9px] text-slate-400 mt-3 font-bold uppercase italic">Honor + Listrik + Sewa + Ops</p>
+                <p class="text-[9px] text-slate-400 mt-3 font-bold uppercase italic">Honor + Operasional</p>
             </div>
-            <div class="bg-indigo-900 p-8 rounded-[2.5rem] shadow-xl text-white flex justify-between items-center">
-                <div>
+            <div class="bg-indigo-900 p-8 rounded-[2.5rem] shadow-xl text-white flex justify-between items-center relative overflow-hidden">
+                <div class="relative z-10">
                     <p class="text-[10px] font-black text-indigo-300 uppercase tracking-widest mb-1">Saldo Kas Sekolah</p>
                     <h3 class="text-4xl font-black text-yellow-400 italic">Rp <?php echo number_format($saldo_bersih, 0, ',', '.'); ?></h3>
                 </div>
-                <i class="fas fa-wallet text-5xl text-white/10"></i>
+                <i class="fas fa-wallet text-6xl text-white/10 absolute right-4 -bottom-2"></i>
             </div>
         </div>
 
@@ -126,7 +130,7 @@ $saldo_bersih = ($total_les + $total_manual_masuk) - ($total_honor_lunas + $tota
             <div class="lg:col-span-1">
                 <div class="bg-white p-8 rounded-[3rem] shadow-2xl border-2 border-red-700 sticky top-28">
                     <h2 class="text-xl font-black text-slate-800 uppercase italic mb-6 leading-none border-b-2 border-yellow-400 pb-2">
-                        <?php echo $data_edit ? 'Edit Data' : 'Input Manual'; ?>
+                        <?php echo $data_edit ? 'Edit Transaksi' : 'Input Manual'; ?>
                     </h2>
                     
                     <form method="POST" class="space-y-4 text-[10px] font-black uppercase tracking-widest">
@@ -145,7 +149,7 @@ $saldo_bersih = ($total_les + $total_manual_masuk) - ($total_honor_lunas + $tota
                         </div>
                         <div>
                             <label class="ml-2 text-slate-400 italic font-bold">Kategori</label>
-                            <input type="text" name="kategori" value="<?php echo $data_edit['kategori'] ?? ''; ?>" class="w-full p-4 rounded-2xl bg-slate-50 border-2 border-slate-50 outline-none font-bold italic" placeholder="Contoh: Uang Pendaftaran" required>
+                            <input type="text" name="kategori" value="<?php echo $data_edit['kategori'] ?? ''; ?>" class="w-full p-4 rounded-2xl bg-slate-50 border-2 border-slate-50 outline-none font-bold italic" placeholder="Misal: Uang Pendaftaran" required>
                         </div>
                         <div>
                             <label class="ml-2 text-slate-400 italic font-bold">Nominal (Rp)</label>
@@ -170,7 +174,7 @@ $saldo_bersih = ($total_les + $total_manual_masuk) - ($total_honor_lunas + $tota
                     <div class="grid grid-cols-1 gap-4">
                         <?php 
                         $q_req = mysqli_query($conn, "SELECT u.id as id_guru, u.username as nama_guru, SUM(a.nominal_bayar) as total FROM absensi a JOIN jadwal j ON a.id_jadwal = j.id JOIN users u ON j.id_guru = u.id WHERE a.status_honor = 'proses' GROUP BY u.id");
-                        if(mysqli_num_rows($q_req) == 0) echo '<p class="text-[10px] italic text-slate-400 p-8 bg-white rounded-3xl border-2 border-dashed font-black uppercase tracking-widest">Belum ada permintaan tarik honor.</p>';
+                        if(mysqli_num_rows($q_req) == 0) echo '<p class="text-[10px] italic text-slate-400 p-8 bg-white rounded-3xl border-2 border-dashed font-black uppercase tracking-widest">Tidak ada permintaan tarik honor.</p>';
                         while($row = mysqli_fetch_assoc($q_req)): 
                         ?>
                         <div class="bg-white p-6 rounded-[2rem] shadow-lg flex flex-col md:flex-row justify-between items-center border-l-[10px] border-red-700 gap-4">
@@ -180,7 +184,7 @@ $saldo_bersih = ($total_les + $total_manual_masuk) - ($total_honor_lunas + $tota
                             </div>
                             <form method="POST">
                                 <input type="hidden" name="id_guru" value="<?php echo $row['id_guru']; ?>">
-                                <button type="submit" name="bayar_honor" class="bg-green-600 hover:bg-green-700 text-white px-8 py-3 rounded-2xl text-[10px] font-black uppercase shadow-lg transition transform active:scale-95 italic">Konfirmasi Lunas <i class="fas fa-check-double ml-1"></i></button>
+                                <button type="submit" name="bayar_honor" class="bg-green-600 hover:bg-green-700 text-white px-8 py-3 rounded-2xl text-[10px] font-black uppercase shadow-lg transition transform active:scale-95 italic text-[8px]">Konfirmasi Lunas <i class="fas fa-check-double ml-1"></i></button>
                             </form>
                         </div>
                         <?php endwhile; ?>
@@ -190,65 +194,70 @@ $saldo_bersih = ($total_les + $total_manual_masuk) - ($total_honor_lunas + $tota
                 <section>
                     <h2 class="text-xl font-black text-slate-800 uppercase italic mb-6 border-b-2 border-green-500 pb-2 inline-block leading-none"><i class="fas fa-music mr-2 text-green-500"></i> Pemasukan Les (SPP Siswa)</h2>
                     <div class="bg-white rounded-[2.5rem] shadow-xl overflow-hidden border border-slate-100">
-                        <table class="w-full text-[10px] text-left">
-                            <thead class="bg-slate-50 text-slate-400 font-black uppercase italic tracking-widest">
-                                <tr>
-                                    <th class="p-5">Tanggal</th>
-                                    <th class="p-5">Nama Siswa</th>
-                                    <th class="p-5">Materi</th>
-                                    <th class="p-5">Nominal</th>
-                                </tr>
-                            </thead>
-                            <tbody class="font-bold text-slate-600 italic">
-                                <?php 
-                                $q_les = mysqli_query($conn, "SELECT a.*, u.username as nama_murid FROM absensi a JOIN jadwal j ON a.id_jadwal = j.id JOIN users u ON j.id_murid = u.id ORDER BY a.tanggal DESC LIMIT 5");
-                                if(mysqli_num_rows($q_les) == 0) echo '<tr><td colspan="4" class="p-8 text-center text-slate-300 italic">Belum ada data pembayaran les.</td></tr>';
-                                while($l = mysqli_fetch_assoc($q_les)):
-                                ?>
-                                <tr class="border-b border-slate-50">
-                                    <td class="p-5 text-indigo-600"><?php echo date('d/m/y', strtotime($l['tanggal'])); ?></td>
-                                    <td class="p-5 uppercase"><?php echo $l['nama_murid']; ?></td>
-                                    <td class="p-5 text-slate-400 truncate max-w-[150px]"><?php echo $l['materi_ajar']; ?></td>
-                                    <td class="p-5">Rp <?php echo number_format($l['nominal_bayar'], 0, ',', '.'); ?></td>
-                                </tr>
-                                <?php endwhile; ?>
-                            </tbody>
-                        </table>
+                        <div class="table-container">
+                            <table class="w-full text-[10px] text-left">
+                                <thead class="bg-slate-50 text-slate-400 font-black uppercase italic tracking-widest sticky top-0">
+                                    <tr>
+                                        <th class="p-5">Tanggal</th>
+                                        <th class="p-5">Nama Siswa</th>
+                                        <th class="p-5">Nominal</th>
+                                    </tr>
+                                </thead>
+                                <tbody class="font-bold text-slate-600 italic">
+                                    <?php 
+                                    // LIMIT 5 DIHAPUS agar semua data muncul
+                                    $q_les = mysqli_query($conn, "SELECT a.*, u.username as nama_murid FROM absensi a JOIN jadwal j ON a.id_jadwal = j.id JOIN users u ON j.id_murid = u.id ORDER BY a.tanggal DESC");
+                                    if(mysqli_num_rows($q_les) == 0) echo '<tr><td colspan="3" class="p-8 text-center text-slate-300 italic">Belum ada data pembayaran les.</td></tr>';
+                                    while($l = mysqli_fetch_assoc($q_les)):
+                                    ?>
+                                    <tr class="border-b border-slate-50 hover:bg-slate-50 transition">
+                                        <td class="p-5 text-indigo-600"><?php echo date('d/m/y', strtotime($l['tanggal'])); ?></td>
+                                        <td class="p-5 uppercase"><?php echo $l['nama_murid']; ?></td>
+                                        <td class="p-5">Rp <?php echo number_format($l['nominal_bayar'], 0, ',', '.'); ?></td>
+                                    </tr>
+                                    <?php endwhile; ?>
+                                </tbody>
+                            </table>
+                        </div>
                     </div>
+                    <p class="text-[8px] text-slate-300 mt-2 italic font-bold uppercase tracking-widest leading-none">* Menampilkan seluruh data pemasukan dari jurnal guru.</p>
                 </section>
 
                 <section>
                     <h2 class="text-xl font-black text-slate-800 uppercase italic mb-6 border-b-2 border-yellow-400 pb-2 inline-block leading-none"><i class="fas fa-history mr-2 text-slate-400"></i> Log Transaksi Lain-lain</h2>
                     <div class="bg-white rounded-[2.5rem] shadow-xl overflow-hidden border border-slate-100">
-                        <table class="w-full text-[10px] text-left">
-                            <thead class="bg-slate-50 text-slate-400 font-black uppercase italic tracking-widest">
-                                <tr>
-                                    <th class="p-5">Tanggal</th>
-                                    <th class="p-5">Kategori</th>
-                                    <th class="p-5">Jenis</th>
-                                    <th class="p-5">Nominal</th>
-                                    <th class="p-5 text-center">Aksi</th>
-                                </tr>
-                            </thead>
-                            <tbody class="font-bold text-slate-600 italic">
-                                <?php 
-                                $q_man = mysqli_query($conn, "SELECT * FROM transaksi_manual ORDER BY tanggal DESC");
-                                if(mysqli_num_rows($q_man) == 0) echo '<tr><td colspan="5" class="p-8 text-center text-slate-300 italic">Gunakan form di kiri untuk mengisi data.</td></tr>';
-                                while($m = mysqli_fetch_assoc($q_man)):
-                                ?>
-                                <tr class="border-b border-slate-50 hover:bg-slate-50 transition">
-                                    <td class="p-5"><?php echo date('d/m/y', strtotime($m['tanggal'])); ?></td>
-                                    <td class="p-5 uppercase"><?php echo $m['kategori']; ?></td>
-                                    <td class="p-5 uppercase <?php echo $m['jenis'] == 'pemasukan' ? 'text-green-500' : 'text-red-500'; ?>"><?php echo $m['jenis']; ?></td>
-                                    <td class="p-5">Rp <?php echo number_format($m['nominal'], 0, ',', '.'); ?></td>
-                                    <td class="p-5 text-center flex justify-center gap-3">
-                                        <a href="honor.php?edit_id=<?php echo $m['id']; ?>" class="text-indigo-400 hover:text-indigo-700 transition" title="Edit"><i class="fas fa-edit"></i></a>
-                                        <a href="honor.php?hapus_id=<?php echo $m['id']; ?>" class="text-red-300 hover:text-red-600 transition" onclick="return confirm('Hapus data ini?')" title="Hapus"><i class="fas fa-trash"></i></a>
-                                    </td>
-                                </tr>
-                                <?php endwhile; ?>
-                            </tbody>
-                        </table>
+                        <div class="table-container">
+                            <table class="w-full text-[10px] text-left">
+                                <thead class="bg-slate-50 text-slate-400 font-black uppercase italic tracking-widest sticky top-0">
+                                    <tr>
+                                        <th class="p-5">Tanggal</th>
+                                        <th class="p-5">Kategori</th>
+                                        <th class="p-5">Jenis</th>
+                                        <th class="p-5">Nominal</th>
+                                        <th class="p-5 text-center">Aksi</th>
+                                    </tr>
+                                </thead>
+                                <tbody class="font-bold text-slate-600 italic">
+                                    <?php 
+                                    // Tampil semua riwayat manual
+                                    $q_man = mysqli_query($conn, "SELECT * FROM transaksi_manual ORDER BY tanggal DESC");
+                                    if(mysqli_num_rows($q_man) == 0) echo '<tr><td colspan="5" class="p-8 text-center text-slate-300 italic">Belum ada data transaksi manual.</td></tr>';
+                                    while($m = mysqli_fetch_assoc($q_man)):
+                                    ?>
+                                    <tr class="border-b border-slate-50 hover:bg-slate-50 transition">
+                                        <td class="p-5"><?php echo date('d/m/y', strtotime($m['tanggal'])); ?></td>
+                                        <td class="p-5 uppercase"><?php echo $m['kategori']; ?></td>
+                                        <td class="p-5 uppercase <?php echo $m['jenis'] == 'pemasukan' ? 'text-green-500' : 'text-red-500'; ?>"><?php echo $m['jenis']; ?></td>
+                                        <td class="p-5">Rp <?php echo number_format($m['nominal'], 0, ',', '.'); ?></td>
+                                        <td class="p-5 text-center flex justify-center gap-3">
+                                            <a href="honor.php?edit_id=<?php echo $m['id']; ?>" class="text-indigo-400 hover:text-indigo-700 transition" title="Edit"><i class="fas fa-edit"></i></a>
+                                            <a href="honor.php?hapus_id=<?php echo $m['id']; ?>" class="text-red-300 hover:text-red-600 transition" onclick="return confirm('Hapus data ini?')" title="Hapus"><i class="fas fa-trash"></i></a>
+                                        </td>
+                                    </tr>
+                                    <?php endwhile; ?>
+                                </tbody>
+                            </table>
+                        </div>
                     </div>
                 </section>
 
