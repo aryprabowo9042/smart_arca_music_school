@@ -60,12 +60,10 @@ if (isset($_POST['request_tarik'])) {
 // ==========================================
 // 4. HITUNG SALDO
 // ==========================================
-// Saldo tersedia (Status: belum)
 $q_saldo = mysqli_query($conn, "SELECT SUM(`nominal_bayar`) as total FROM `absensi` a JOIN `jadwal` j ON a.`id_jadwal` = j.`id` WHERE j.`id_guru` = '$id_guru' AND a.status_honor = 'belum'");
 $res_saldo = mysqli_fetch_assoc($q_saldo);
 $total_hak = floor(($res_saldo['total'] ?? 0) * 0.5);
 
-// Saldo dalam proses (Status: proses)
 $q_proses = mysqli_query($conn, "SELECT SUM(`nominal_bayar`) as total FROM `absensi` a JOIN `jadwal` j ON a.`id_jadwal` = j.`id` WHERE j.`id_guru` = '$id_guru' AND a.status_honor = 'proses'");
 $res_proses = mysqli_fetch_assoc($q_proses);
 $total_proses = floor(($res_proses['total'] ?? 0) * 0.5);
@@ -137,69 +135,84 @@ $total_proses = floor(($res_proses['total'] ?? 0) * 0.5);
             $res_j = mysqli_query($conn, $sql_j);
             
             while($r = mysqli_fetch_assoc($res_j)): 
-                $id_jadwal = (int)$r['id'];
+                $id_jadwal_loop = (int)$r['id'];
                 
-                // Cek Mode Edit
+                // DETEKSI APAKAH BARIS INI SEDANG DIEDIT
                 $is_editing = false;
                 $data_edit = null;
                 if(isset($_GET['edit_id'])) {
                     $eid = (int)$_GET['edit_id'];
-                    $q_edit = mysqli_query($conn, "SELECT * FROM `absensi` WHERE `id` = '$eid' AND `id_jadwal` = '$id_jadwal'");
-                    $data_edit = mysqli_fetch_assoc($q_edit);
-                    if($data_edit) $is_editing = true;
+                    // Kita cari tahu apakah edit_id ini milik jadwal ini
+                    $q_edit = mysqli_query($conn, "SELECT * FROM `absensi` WHERE `id` = '$eid' AND `id_jadwal` = '$id_jadwal_loop'");
+                    if(mysqli_num_rows($q_edit) > 0) {
+                        $data_edit = mysqli_fetch_assoc($q_edit);
+                        $is_editing = true;
+                    }
                 }
             ?>
-            <div class="bg-white rounded-[3rem] shadow-2xl border border-slate-100 p-8 overflow-hidden">
+            <div id="card-<?php echo $id_jadwal_loop; ?>" class="bg-white rounded-[3rem] shadow-2xl border <?php echo $is_editing ? 'border-red-600 ring-4 ring-red-50' : 'border-slate-100'; ?> p-8 overflow-hidden transition-all duration-500">
                 <div class="flex flex-col md:flex-row justify-between mb-8 gap-4 border-b pb-6 border-slate-50">
                     <div>
                         <span class="bg-red-100 text-red-700 px-4 py-1 rounded-full text-[10px] font-black uppercase tracking-widest italic"><?php echo $r['hari']; ?></span>
                         <h3 class="text-4xl font-black text-slate-800 uppercase italic mt-2 tracking-tighter leading-none"><?php echo $r['nama_murid']; ?></h3>
                         <p class="text-slate-400 font-bold text-xs mt-2 uppercase italic"><i class="fas fa-music mr-1"></i> <?php echo $r['alat_musik']; ?> • <?php echo date('H:i', strtotime($r['jam'])); ?> WIB</p>
                     </div>
+                    <?php if($is_editing): ?>
+                        <div class="flex items-center">
+                            <span class="bg-yellow-400 text-red-800 px-4 py-2 rounded-xl text-[10px] font-black uppercase italic animate-pulse">Mode Edit Aktif</span>
+                        </div>
+                    <?php endif; ?>
                 </div>
 
-                <form method="POST" class="grid grid-cols-1 md:grid-cols-2 gap-8 bg-slate-50 p-8 rounded-[2.5rem] border-2 border-dashed border-slate-200 mb-10">
-                    <input type="hidden" name="id_jadwal" value="<?php echo $id_jadwal; ?>">
-                    <?php if($is_editing): ?><input type="hidden" name="id_edit" value="<?php echo $data_edit['id']; ?>"><?php endif; ?>
+                <form method="POST" class="grid grid-cols-1 md:grid-cols-2 gap-8 <?php echo $is_editing ? 'bg-red-50' : 'bg-slate-50'; ?> p-8 rounded-[2.5rem] border-2 border-dashed border-slate-200 mb-10">
+                    <input type="hidden" name="id_jadwal" value="<?php echo $id_jadwal_loop; ?>">
+                    <?php if($is_editing): ?>
+                        <input type="hidden" name="id_edit" value="<?php echo $data_edit['id']; ?>">
+                    <?php endif; ?>
 
                     <div class="space-y-5">
                         <div class="space-y-1">
                             <label class="text-[9px] font-black text-red-600 uppercase ml-3">Tanggal Pertemuan</label>
-                            <input type="date" name="tanggal_absen" value="<?php echo $data_edit['tanggal'] ?? date('Y-m-d'); ?>" class="w-full p-4 rounded-2xl border-2 border-white text-xs font-bold shadow-sm focus:border-red-600 outline-none transition" required>
+                            <input type="date" name="tanggal_absen" value="<?php echo $is_editing ? $data_edit['tanggal'] : date('Y-m-d'); ?>" class="w-full p-4 rounded-2xl border-2 border-white text-xs font-bold shadow-sm focus:border-red-600 outline-none transition" required>
                         </div>
                         <div class="grid grid-cols-2 gap-4">
                             <div class="space-y-1">
                                 <label class="text-[9px] font-black text-red-600 uppercase ml-3">Jam Mulai</label>
-                                <input type="time" name="jam_mulai" value="<?php echo $data_edit['jam_mulai'] ?? ''; ?>" class="w-full p-4 rounded-2xl border-2 border-white text-xs font-bold shadow-sm" required>
+                                <input type="time" name="jam_mulai" value="<?php echo $is_editing ? substr($data_edit['jam_mulai'], 0, 5) : ''; ?>" class="w-full p-4 rounded-2xl border-2 border-white text-xs font-bold shadow-sm" required>
                             </div>
                             <div class="space-y-1">
                                 <label class="text-[9px] font-black text-red-600 uppercase ml-3">Jam Selesai</label>
-                                <input type="time" name="jam_selesai" value="<?php echo $data_edit['jam_selesai'] ?? ''; ?>" class="w-full p-4 rounded-2xl border-2 border-white text-xs font-bold shadow-sm" required>
+                                <input type="time" name="jam_selesai" value="<?php echo $is_editing ? substr($data_edit['jam_selesai'], 0, 5) : ''; ?>" class="w-full p-4 rounded-2xl border-2 border-white text-xs font-bold shadow-sm" required>
                             </div>
                         </div>
                         <div class="space-y-1">
                             <label class="text-[9px] font-black text-red-600 uppercase ml-3">Nominal Bayar Siswa</label>
-                            <input type="number" name="nominal_bayar" value="<?php echo $data_edit['nominal_bayar'] ?? ''; ?>" class="w-full p-4 rounded-2xl border-2 border-white text-xs font-bold shadow-sm" placeholder="Contoh: 75000" required>
+                            <input type="number" name="nominal_bayar" value="<?php echo $is_editing ? $data_edit['nominal_bayar'] : ''; ?>" class="w-full p-4 rounded-2xl border-2 border-white text-xs font-bold shadow-sm" placeholder="Contoh: 75000" required>
                         </div>
                     </div>
 
                     <div class="space-y-5">
                         <div class="space-y-1">
                             <label class="text-[9px] font-black text-red-600 uppercase ml-3">Materi Ajar</label>
-                            <textarea name="materi_les" rows="2" class="w-full p-4 rounded-2xl border-2 border-white text-xs font-bold shadow-sm outline-none focus:border-red-600" placeholder="Lagu / Materi hari ini" required><?php echo $data_edit['materi_ajar'] ?? ''; ?></textarea>
+                            <textarea name="materi_les" rows="2" class="w-full p-4 rounded-2xl border-2 border-white text-xs font-bold shadow-sm outline-none focus:border-red-600" placeholder="Lagu / Materi hari ini" required><?php echo $is_editing ? $data_edit['materi_ajar'] : ''; ?></textarea>
                         </div>
                         <div class="space-y-1">
                             <label class="text-[9px] font-black text-red-600 uppercase ml-3">Catatan / Perkembangan</label>
-                            <textarea name="refleksi_guru" rows="2" class="w-full p-4 rounded-2xl border-2 border-white text-xs font-bold shadow-sm outline-none focus:border-red-600" placeholder="Pesan untuk siswa" required><?php echo $data_edit['perkembangan_murid'] ?? ''; ?></textarea>
+                            <textarea name="refleksi_guru" rows="2" class="w-full p-4 rounded-2xl border-2 border-white text-xs font-bold shadow-sm outline-none focus:border-red-600" placeholder="Pesan untuk siswa" required><?php echo $is_editing ? $data_edit['perkembangan_murid'] : ''; ?></textarea>
                         </div>
-                        <button type="submit" name="absen" class="w-full bg-red-700 hover:bg-red-800 text-white font-black py-4 rounded-2xl uppercase italic text-[11px] shadow-xl transition transform active:scale-95">
-                            <i class="fas fa-save mr-2"></i> <?php echo $is_editing ? 'Update Catatan' : 'Simpan Pertemuan'; ?>
-                        </button>
+                        <div class="grid grid-cols-<?php echo $is_editing ? '2' : '1'; ?> gap-3">
+                            <button type="submit" name="absen" class="w-full bg-red-700 hover:bg-red-800 text-white font-black py-4 rounded-2xl uppercase italic text-[11px] shadow-xl transition transform active:scale-95">
+                                <i class="fas fa-save mr-2"></i> <?php echo $is_editing ? 'Update' : 'Simpan'; ?>
+                            </button>
+                            <?php if($is_editing): ?>
+                                <a href="index.php" class="w-full bg-slate-200 text-slate-600 font-black py-4 rounded-2xl uppercase italic text-[11px] text-center shadow-md">Batal</a>
+                            <?php endif; ?>
+                        </div>
                     </div>
                 </form>
 
                 <div class="px-2">
-                    <h4 class="text-[10px] font-black text-slate-800 uppercase tracking-widest mb-4 border-b-2 border-yellow-400 pb-2 italic"><i class="fas fa-history mr-1"></i> Dokumentasi Pertemuan - <?php echo $r['nama_murid']; ?></h4>
+                    <h4 class="text-[10px] font-black text-slate-800 uppercase tracking-widest mb-4 border-b-2 border-yellow-400 pb-2 italic"><i class="fas fa-history mr-1"></i> Riwayat - <?php echo $r['nama_murid']; ?></h4>
                     <div class="overflow-x-auto">
                         <table class="w-full text-left">
                             <thead>
@@ -212,10 +225,10 @@ $total_proses = floor(($res_proses['total'] ?? 0) * 0.5);
                             </thead>
                             <tbody class="text-[11px] font-bold text-slate-600">
                                 <?php 
-                                $q_histori = mysqli_query($conn, "SELECT * FROM `absensi` WHERE `id_jadwal` = '$id_jadwal' ORDER BY `tanggal` DESC, `id` DESC LIMIT 5");
+                                $q_histori = mysqli_query($conn, "SELECT * FROM `absensi` WHERE `id_jadwal` = '$id_jadwal_loop' ORDER BY `tanggal` DESC, `id` DESC LIMIT 5");
                                 if(mysqli_num_rows($q_histori) == 0):
                                 ?>
-                                    <tr><td colspan="4" class="p-4 text-center text-slate-200 italic">Belum ada data pertemuan.</td></tr>
+                                    <tr><td colspan="4" class="p-4 text-center text-slate-200 italic">Belum ada data.</td></tr>
                                 <?php endif; while($h = mysqli_fetch_assoc($q_histori)): 
                                     $jm = !empty($h['jam_mulai']) ? substr($h['jam_mulai'], 0, 5) : "--:--";
                                     $js = !empty($h['jam_selesai']) ? substr($h['jam_selesai'], 0, 5) : "--:--";
@@ -225,7 +238,7 @@ $total_proses = floor(($res_proses['total'] ?? 0) * 0.5);
                                     <td class="p-3 text-slate-400"><?php echo $jm; ?>-<?php echo $js; ?></td>
                                     <td class="p-3 italic max-w-[200px] truncate"><?php echo htmlspecialchars($h['materi_ajar'] ?? '-'); ?></td>
                                     <td class="p-3 text-right">
-                                        <a href="index.php?edit_id=<?php echo $h['id']; ?>" class="bg-yellow-100 text-yellow-600 w-8 h-8 rounded-lg inline-flex items-center justify-center hover:bg-yellow-400 hover:text-white transition shadow-sm"><i class="fas fa-edit"></i></a>
+                                        <a href="index.php?edit_id=<?php echo $h['id']; ?>#card-<?php echo $id_jadwal_loop; ?>" class="bg-yellow-100 text-yellow-600 w-8 h-8 rounded-lg inline-flex items-center justify-center hover:bg-yellow-400 hover:text-white transition shadow-sm"><i class="fas fa-edit"></i></a>
                                     </td>
                                 </tr>
                                 <?php endwhile; ?>
@@ -241,6 +254,20 @@ $total_proses = floor(($res_proses['total'] ?? 0) * 0.5);
     <footer class="text-center mt-10">
         <p class="text-[9px] font-black text-slate-300 uppercase tracking-widest">&copy; 2026 Smart Arca Music School - System</p>
     </footer>
+
+    <?php if(isset($_GET['edit_id'])): ?>
+    <script>
+        window.onload = function() {
+            const urlParams = new URLSearchParams(window.location.search);
+            if(urlParams.has('edit_id')) {
+                const element = document.querySelector('.border-red-600');
+                if(element) {
+                    element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                }
+            }
+        }
+    </script>
+    <?php endif; ?>
 
 </body>
 </html>
