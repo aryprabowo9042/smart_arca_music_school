@@ -18,7 +18,11 @@ if (isset($_POST['simpan_transaksi'])) {
     $jenis = $_POST['jenis']; 
     $kat = mysqli_real_escape_string($conn, $_POST['kategori']);
     $nom = (int)$_POST['nominal'];
-    $ket = mysqli_real_escape_string($conn, $_POST['keterangan']);
+    
+    // Perbaikan Error: Gunakan ?? '' untuk mencegah error jika keterangan kosong
+    $ket_input = $_POST['keterangan'] ?? ''; 
+    $ket = mysqli_real_escape_string($conn, $ket_input);
+    
     $id_edit = isset($_POST['id_edit']) ? (int)$_POST['id_edit'] : 0;
 
     if ($id_edit > 0) {
@@ -158,6 +162,10 @@ $saldo_bersih = ($total_les + $total_manual_masuk) - ($total_honor_lunas + $tota
                         <div>
                             <label class="ml-2 text-slate-400 italic font-bold">Nominal (Rp)</label>
                             <input type="number" name="nominal" value="<?php echo $data_edit['nominal'] ?? ''; ?>" class="w-full p-4 rounded-2xl bg-slate-50 border-2 border-slate-50 font-bold" required>
+                        </div>
+                        <div>
+                            <label class="ml-2 text-slate-400 italic font-bold">Keterangan</label>
+                            <textarea name="keterangan" class="w-full p-4 rounded-2xl bg-slate-50 border-2 border-slate-50 font-bold outline-none focus:border-red-600" placeholder="Catatan singkat"><?php echo $data_edit['keterangan'] ?? ''; ?></textarea>
                         </div>
                         
                         <button type="submit" name="simpan_transaksi" class="w-full bg-red-700 text-white py-4 rounded-2xl font-black uppercase shadow-xl hover:bg-red-800 transition transform active:scale-95 italic text-xs">
