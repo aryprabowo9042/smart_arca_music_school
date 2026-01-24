@@ -6,8 +6,8 @@
   },
   "routes": [
     {
-      "src": "/api/chat_process.php",
-      "dest": "/api/chat_process.php"
+      "src": "/chat_process.php",
+      "dest": "/chat_process.php"
     },
     {
       "src": "/(.*)",
