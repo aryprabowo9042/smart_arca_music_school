@@ -24,5 +24,4 @@ $real_connect = mysqli_real_connect(
 if (!$real_connect) {
     die("Koneksi gagal: " . mysqli_connect_error());
 }
-?>
 define('GROQ_API_KEY', getenv('GROQ_API_KEY'));
