@@ -1,35 +1,44 @@
 <?php
 require_once('koneksi.php');
-
-// Pastikan tidak ada karakter keluar sebelum header ini
+ob_clean();
 header('Content-Type: application/json');
 
-$data = json_decode(file_get_contents('php://input'), true);
-$userMessage = $data['message'] ?? '';
+$input = json_decode(file_get_contents('php://input'), true);
+$message = $input['message'] ?? '';
 
-if (empty($userMessage)) {
-    echo json_encode(['reply' => 'Halo! Ada yang bisa Arca bantu mengenai kursus musik?']);
+// DETEKSI APAKAH KEY TERBACA
+$key = getenv('GROQ_API_KEY');
+
+if (!$key) {
+    echo json_encode(['reply' => 'Error: Server Vercel tidak menemukan variabel GROQ_API_KEY. Pastikan sudah Redeploy.']);
     exit;
 }
 
-$apiKey = GROQ_API_KEY;
-$url = "https://api.groq.com/openai/v1/chat/completions";
-
-$messages = [
-    ["role" => "system", "content" => "Anda adalah Arca AI, asisten Smart Arca Music School Weleri. Ramah, ceria, dan informatif. Produk kita: Kelas Drum, Keyboard, Gitar Akustik, Gitar Elektrik, Bas, dan Vokal. Lokasi: Jl. Tamtama, Sekepel, Penyangkringan, Weleri. Admin WA: 0895360796038."],
-    ["role" => "user", "content" => $userMessage]
-];
-
-$ch = curl_init($url);
+$ch = curl_init("https://api.groq.com/openai/v1/chat/completions");
 curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
 curl_setopt($ch, CURLOPT_POST, true);
-curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode(["model" => "llama3-8b-8192", "messages" => $messages]));
-curl_setopt($ch, CURLOPT_HTTPHEADER, ["Content-Type: application/json", "Authorization: Bearer $apiKey"]);
+curl_setopt($ch, CURLOPT_HTTPHEADER, [
+    "Content-Type: application/json",
+    "Authorization: Bearer " . $key
+]);
+curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode([
+    "model" => "llama3-8b-8192",
+    "messages" => [
+        ["role" => "system", "content" => "Asisten Smart Arca Music School."],
+        ["role" => "user", "content" => $message]
+    ]
+]));
 
 $response = curl_exec($ch);
+$httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+$error_curl = curl_error($ch);
 curl_close($ch);
 
-$result = json_decode($response, true);
-$reply = $result['choices'][0]['message']['content'] ?? 'Maaf, Arca sedang latihan musik sebentar. Coba tanya lagi ya!';
-
-echo json_encode(['reply' => $reply]);
+if ($httpCode == 403) {
+    echo json_encode(['reply' => 'Pesan 403: Groq menolak API Key ini. Coba buat Key baru di dashboard Groq.']);
+} elseif ($httpCode !== 200) {
+    echo json_encode(['reply' => 'Error dari Groq (Kode: ' . $httpCode . '). ' . $error_curl]);
+} else {
+    $res = json_decode($response, true);
+    echo json_encode(['reply' => $res['choices'][0]['message']['content']]);
+}
