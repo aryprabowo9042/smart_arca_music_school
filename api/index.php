@@ -182,7 +182,7 @@ if (isset($_POST['login'])) {
 
             setTimeout(() => { document.getElementById('chat-box').scrollTop = 10000; }, 50);
 
-            fetch('chat.php', {
+            fetch('api/chat.php', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ message: userText })
