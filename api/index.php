@@ -39,7 +39,6 @@ if (isset($_POST['login'])) {
     <style>
         body { font-family: 'Plus Jakarta Sans', sans-serif; scroll-behavior: smooth; }
         .modal-bg { background-color: rgba(0, 0, 0, 0.8); backdrop-filter: blur(5px); }
-        /* Animasi Chat */
         [x-cloak] { display: none !important; }
     </style>
 </head>
@@ -70,6 +69,19 @@ if (isset($_POST['login'])) {
         <div class="max-w-4xl mx-auto">
             <span class="inline-block bg-red-100 text-red-600 px-4 py-1 rounded-full text-[10px] font-black uppercase tracking-[0.2em] mb-6">Weleri Kendal Music School</span>
             <h1 class="text-5xl md:text-7xl font-black text-slate-900 italic uppercase tracking-tighter mb-6 leading-tight">Wujudkan <span class="text-red-600">Mimpimu</span><br>Lewat <span class="text-yellow-500">Nada & Irama</span></h1>
+            
+            <div class="mt-12 grid grid-cols-1 md:grid-cols-2 gap-6 text-left max-w-2xl mx-auto">
+                <div class="bg-white p-6 rounded-[2.5rem] shadow-xl border-l-8 border-red-600 flex flex-col justify-center">
+                    <p class="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1 leading-none">Lokasi Sekolah:</p>
+                    <p class="text-xs font-bold text-slate-700 leading-relaxed uppercase italic">Jl. Tamtama, Sekepel, Penyangkringan, Weleri, Kendal</p>
+                </div>
+                <div class="bg-white p-6 rounded-[2.5rem] shadow-xl border-l-8 border-yellow-400 flex flex-col justify-center">
+                    <p class="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1 leading-none">Admin (Mbak Fia):</p>
+                    <a href="https://wa.me/62895360796038" target="_blank" class="text-red-700 font-black italic flex items-center gap-2 text-sm uppercase hover:text-red-800 transition">
+                        <i class="fab fa-whatsapp text-green-500 text-xl"></i> +62 895-3607-96038
+                    </a>
+                </div>
+            </div>
         </div>
     </header>
 
@@ -89,7 +101,7 @@ if (isset($_POST['login'])) {
                     <div class="w-14 h-14 bg-red-100 rounded-2xl flex items-center justify-center text-red-600 text-xl mb-4 mx-auto group-hover:bg-red-600 group-hover:text-white transition"><i class="fas fa-microphone-alt"></i></div>
                     <h4 class="text-xs font-black uppercase italic">Kelas Vokal</h4>
                 </button>
-                </div>
+            </div>
         </div>
     </section>
 
@@ -142,8 +154,22 @@ if (isset($_POST['login'])) {
     </section>
     <?php endif; ?>
 
+    <footer class="bg-slate-900 text-white py-16 px-6 border-t-8 border-yellow-400">
+        <div class="max-w-6xl mx-auto flex flex-col md:flex-row justify-between items-center gap-10">
+            <div class="text-center md:text-left">
+                <h3 class="text-2xl font-black italic uppercase tracking-tighter text-yellow-400 mb-2">Smart Arca Music</h3>
+                <p class="text-[10px] text-slate-500 uppercase font-bold tracking-widest italic">Weleri, Kendal, Jawa Tengah</p>
+            </div>
+            <div class="text-center md:text-right">
+                <a href="https://wa.me/62895360796038" target="_blank" class="bg-red-700 text-white px-8 py-4 rounded-2xl font-black text-xs uppercase shadow-xl hover:bg-red-800 transition inline-flex items-center gap-3 italic">
+                    <i class="fab fa-whatsapp"></i> Chat Admin (Mbak Fia)
+                </a>
+            </div>
+        </div>
+        <p class="text-[9px] font-black uppercase tracking-widest text-slate-600 text-center mt-12">&copy; 2026 Smart Arca Music School. All Rights Reserved.</p>
+    </footer>
+
     <script>
-        // Fungsi JS untuk handle kirim pesan AI
         function sendMessage() {
             const el = document.querySelector('[x-data]');
             const data = el.__x.$data;
@@ -154,7 +180,6 @@ if (isset($_POST['login'])) {
             data.userInput = '';
             data.loading = true;
 
-            // Scroll ke bawah
             setTimeout(() => { document.getElementById('chat-box').scrollTop = 10000; }, 50);
 
             fetch('chat.php', {
@@ -175,10 +200,5 @@ if (isset($_POST['login'])) {
             });
         }
     </script>
-
-    <footer class="bg-slate-900 text-white py-10 text-center border-t-8 border-yellow-400">
-        <p class="text-[9px] font-black uppercase tracking-widest">&copy; 2026 Smart Arca Music School. All Rights Reserved.</p>
-    </footer>
-
 </body>
 </html>
