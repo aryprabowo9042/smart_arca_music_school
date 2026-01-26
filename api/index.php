@@ -62,12 +62,12 @@ if (isset($_POST['login'])) {
 <body class="overflow-x-hidden" x-data="{ 
     openModal: null, 
     silabus: {
-        'Drum': 'Fokus: Stick control, koordinasi kaki-tangan, hingga basic rock beat.',
-        'Keyboard': 'Fokus: Fingering, notasi balok, akord mayor (C, G, F).',
-        'Gitar Akustik': 'Fokus: Akord dasar, pola strumming 4/4, lagu pop.',
-        'Gitar Elektrik': 'Fokus: Power chords, palm muting, cara baca TAB.',
-        'Bass Elektrik': 'Fokus: Plucking jari, skala mayor, menjaga groove.',
-        'Vokal': 'Fokus: Pernapasan diafragma, intonasi, ekspresi lagu.'
+        'Drum': 'Fokus utama adalah membangun koordinasi dan ketahanan fisik siswa.Teknik Dasar: Pengenalan Grip (cara pegang stik), postur duduk yang ergonomis, dan teknik injakan pedal (heel-down/heel-up).Rudiments: Latihan dasar tangan seperti Single Stroke, Double Stroke, dan Paradiddle untuk kecepatan.Koordinasi: Sinkronisasi antara tangan kanan (hi-hat), tangan kiri (snare), dan kaki kanan (bass drum).Teori & Ritme: Membaca notasi drum dan menjaga tempo stabil pada birama $\frac{4}{4}$ dan $\frac{3}{4}$ menggunakan metronom.',
+        'Keyboard': 'Fokus pada pemahaman harmoni dan kemandirian tangan kiri-kanan.Finger Power: Latihan penjarian (fingering) untuk kekuatan dan kelenturan sepuluh jari.Skala & Akor: Pengenalan tangga nada mayor/minor serta pembalikan akor (inversion) agar perpindahan jari lebih efisien.Membaca Not Balok: Memahami Grand Staff (Kunci G untuk tangan kanan dan Kunci F untuk tangan kiri).Eksplorasi Suara: Penggunaan layering voice dan dual voice pada keyboard untuk berbagai genre musik..',
+        'Gitar Akustik': 'Fokus pada kejernihan suara akor dan variasi petikan.Open Chords: Penguasaan akor-akor dasar tanpa hambatan suara (buzzing).Rhythm & Strumming: Berbagai pola genjrengan untuk genre Pop, Folk, dan Balada.Teknik Petikan: Dasar-dasar fingerstyle menggunakan kombinasi jempol dan jari telunjuk-manis.Perawatan Instrumen: Cara menyetem gitar (tuning) secara mandiri dan mengganti senar..',
+        'Gitar Elektrik': 'Fokus pada ekspresi, teknik lead, dan manajemen perangkat elektrik.Teknik Lead: Penggunaan teknik Sliding, Hammer-on, Pull-off, dan Vibrato.Power Chords: Penggunaan akor baris untuk genre Rock dan Blues.Skala Melodi: Pengenalan tangga nada Pentatonik sebagai dasar improvisasi solo gitar.Sound Engineering: Pengenalan fungsi tombol pada amplifier dan urutan efek gitar (stompbox)..',
+        'Bass Elektrik': 'Fokus pada menjaga "Pocket" (tempo) dan hubungan dengan drum.Teknik Plucking: Penggunaan teknik dua jari (index & middle) dengan pola alternate plucking.Fretboard Knowledge: Menghafal posisi nada pada senar E dan A sebagai fondasi lagu.Groove Construction: Membuat jalur bas (bassline) sederhana yang mengikuti ketukan bass drum.Skala Mayor/Minor: Membangun fill-in sederhana agar permainan bas tidak membosankan..',
+        'Vokal': 'Fokus pada fisiologi suara dan kepercayaan diri di panggung.Olah Napas: Latihan napas diafragma untuk mendukung nada panjang dan nada tinggi.Vokalisasi: Latihan warming up untuk memperluas jangkauan suara (vocal range).Artikulasi & Intonasi: Kejelasan pengucapan kata dan ketepatan nada (pitch control).Interpretasi Lagu: Cara menjiwai sebuah lagu agar emosinya sampai kepada pendengar..'
     }
 }">
 
