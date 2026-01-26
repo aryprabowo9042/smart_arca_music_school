@@ -5,22 +5,18 @@ require_once('koneksi.php');
 $role = $_COOKIE['user_role'] ?? null;
 $is_login = ($role !== null);
 
-// 2. LOGIKA PROSES LOGIN (DIPERBAIKI)
+// 2. LOGIKA PROSES LOGIN
 $error = '';
 if (isset($_POST['login'])) {
     $u = mysqli_real_escape_string($conn, $_POST['username']);
     $p = $_POST['password'];
-
     $q = mysqli_query($conn, "SELECT * FROM users WHERE username = '$u' AND password = '$p' LIMIT 1");
 
     if (mysqli_num_rows($q) > 0) {
         $user = mysqli_fetch_assoc($q);
-        
-        // MENYIMPAN SEMUA BEKAL KE KUKI
         setcookie('user_id', $user['id'], time() + (86400 * 30), "/"); 
         setcookie('user_role', $user['role'], time() + (86400 * 30), "/");
         setcookie('user_username', $user['username'], time() + (86400 * 30), "/");
-        
         header("Location: " . $user['role'] . "/index.php");
         exit();
     } else {
@@ -50,6 +46,7 @@ if (isset($_POST['login'])) {
     <script defer src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js"></script>
     <style>
         body {
+            background-color: #ffffff;
             background-image: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M54.627 0l.83.828-1.415 1.415-.83-.828 1.415-1.415zm4.95 1.414l.828.83-1.414 1.415-.828-.83 1.414-1.415zm-4.243 4.243l.828.83-1.415 1.415-.828-.83 1.415-1.415zm19.8 0l.828.83-1.414 1.415-.828-.83 1.414-1.415zm-8.485 8.485l.828.83-1.415 1.415-.828-.83 1.415-1.415zm19.8 0l.83.83-1.415 1.414-.83-.83 1.415-1.414zm-16.97 16.97l.828.83-1.414 1.415-.828-.83 1.414-1.415zm33.94 0l.83.83-1.415 1.415-.83-.83 1.415-1.415zM28 28c0-11.046 8.954-20 20-20s20 8.954 20 20-8.954 20-20 20-20-8.954-20-20zm-8 0c0-6.627 5.373-12 12-12s12 5.373 12 12-5.373 12-12 12-12-5.373-12-12zm-8 0c0-2.21 1.79-4 4-4s4 1.79 4 4-1.79 4-4 4-4-1.79-4-4zm-8 0c0 1.105-.895 2-2 2s-2-.895-2-2 .895-2 2-2 2 .895 2 2zm-8 0c0-13.255 10.745-24 24-24s24 10.745 24 24-10.745 24-24 24-24-10.745-24-24zm-8 0c0-8.837 7.163-16 16-16s16 7.163 16 16-7.163 16-16 16-16-7.163-16-16zm-8 0c0-4.418 3.582-8 8-8s8 3.582 8 8-3.582 8-8 8-8-3.582-8-8zm-8 0c0-2.21 1.79-4 4-4s4 1.79 4 4-1.79 4-4 4-4-1.79-4-4zm-8 0c0 1.105-.895 2-2 2s-2-.895-2-2 .895-2 2-2 2 .895 2 2z' fill='%23d31f26' fill-opacity='0.03'/%3E%3C/svg%3E");
         }
         .hero-bg {
@@ -62,12 +59,12 @@ if (isset($_POST['login'])) {
 <body class="overflow-x-hidden" x-data="{ 
     openModal: null, 
     silabus: {
-        'Drum': 'Fokus utama adalah membangun koordinasi dan ketahanan fisik siswa.Teknik Dasar: Pengenalan Grip (cara pegang stik), postur duduk yang ergonomis, dan teknik injakan pedal (heel-down/heel-up).Rudiments: Latihan dasar tangan seperti Single Stroke, Double Stroke, dan Paradiddle untuk kecepatan.Koordinasi: Sinkronisasi antara tangan kanan (hi-hat), tangan kiri (snare), dan kaki kanan (bass drum).Teori & Ritme: Membaca notasi drum dan menjaga tempo stabil pada birama $\frac{4}{4}$ dan $\frac{3}{4}$ menggunakan metronom.',
-        'Keyboard': 'Fokus pada pemahaman harmoni dan kemandirian tangan kiri-kanan.Finger Power: Latihan penjarian (fingering) untuk kekuatan dan kelenturan sepuluh jari.Skala & Akor: Pengenalan tangga nada mayor/minor serta pembalikan akor (inversion) agar perpindahan jari lebih efisien.Membaca Not Balok: Memahami Grand Staff (Kunci G untuk tangan kanan dan Kunci F untuk tangan kiri).Eksplorasi Suara: Penggunaan layering voice dan dual voice pada keyboard untuk berbagai genre musik..',
-        'Gitar Akustik': 'Fokus pada kejernihan suara akor dan variasi petikan.Open Chords: Penguasaan akor-akor dasar tanpa hambatan suara (buzzing).Rhythm & Strumming: Berbagai pola genjrengan untuk genre Pop, Folk, dan Balada.Teknik Petikan: Dasar-dasar fingerstyle menggunakan kombinasi jempol dan jari telunjuk-manis.Perawatan Instrumen: Cara menyetem gitar (tuning) secara mandiri dan mengganti senar..',
-        'Gitar Elektrik': 'Fokus pada ekspresi, teknik lead, dan manajemen perangkat elektrik.Teknik Lead: Penggunaan teknik Sliding, Hammer-on, Pull-off, dan Vibrato.Power Chords: Penggunaan akor baris untuk genre Rock dan Blues.Skala Melodi: Pengenalan tangga nada Pentatonik sebagai dasar improvisasi solo gitar.Sound Engineering: Pengenalan fungsi tombol pada amplifier dan urutan efek gitar (stompbox)..',
-        'Bass Elektrik': 'Fokus pada menjaga "Pocket" (tempo) dan hubungan dengan drum.Teknik Plucking: Penggunaan teknik dua jari (index & middle) dengan pola alternate plucking.Fretboard Knowledge: Menghafal posisi nada pada senar E dan A sebagai fondasi lagu.Groove Construction: Membuat jalur bas (bassline) sederhana yang mengikuti ketukan bass drum.Skala Mayor/Minor: Membangun fill-in sederhana agar permainan bas tidak membosankan..',
-        'Vokal': 'Fokus pada fisiologi suara dan kepercayaan diri di panggung.Olah Napas: Latihan napas diafragma untuk mendukung nada panjang dan nada tinggi.Vokalisasi: Latihan warming up untuk memperluas jangkauan suara (vocal range).Artikulasi & Intonasi: Kejelasan pengucapan kata dan ketepatan nada (pitch control).Interpretasi Lagu: Cara menjiwai sebuah lagu agar emosinya sampai kepada pendengar..'
+        'Drum': 'Fokus utama adalah membangun koordinasi dan ketahanan fisik siswa. Pengenalan Grip, postur duduk ergonomis, dan teknik pedal. Latihan Rudiments (Single/Double Stroke, Paradiddle). Sinkronisasi tangan kanan, kiri, dan kaki kanan. Belajar membaca notasi drum serta menjaga tempo stabil pada birama 4/4 dan 3/4.',
+        'Keyboard': 'Fokus pada pemahaman harmoni dan kemandirian tangan kiri-kanan. Latihan penjarian (fingering) untuk kelenturan sepuluh jari. Pengenalan tangga nada mayor/minor serta pembalikan akor (inversion). Memahami Grand Staff (Kunci G dan Kunci F). Penggunaan layering voice untuk berbagai genre musik.',
+        'Gitar Akustik': 'Fokus pada kejernihan suara akor dan variasi petikan. Penguasaan akor dasar tanpa hambatan suara (buzzing). Belajar berbagai pola genjrengan (strumming) untuk genre Pop dan Folk. Dasar-dasar fingerstyle menggunakan kombinasi jari. Cara menyetem gitar secara mandiri.',
+        'Gitar Elektrik': 'Fokus pada ekspresi, teknik lead, dan perangkat elektrik. Penggunaan teknik Sliding, Hammer-on, Pull-off, dan Vibrato. Penguasaan Power Chords untuk genre Rock dan Blues. Pengenalan tangga nada Pentatonik untuk improvisasi solo. Pengenalan fungsi amplifier dan efek gitar.',
+        'Bass Elektrik': 'Fokus pada menjaga tempo (groove) dan hubungan dengan drum. Teknik plucking dua jari dengan pola alternate plucking. Menghafal posisi nada pada senar E dan A. Membuat jalur bas (bassline) sederhana mengikuti ketukan drum. Membangun fill-in sederhana agar permainan lebih variatif.',
+        'Vokal': 'Fokus pada fisiologi suara dan kepercayaan diri. Latihan napas diafragma untuk nada panjang dan tinggi. Warming up untuk memperluas jangkauan suara (vocal range). Kejelasan artikulasi dan ketepatan nada (pitch control). Cara menjiwai lagu agar emosi sampai ke pendengar.'
     }
 }">
 
@@ -86,12 +83,12 @@ if (isset($_POST['login'])) {
 
     <header class="relative py-24 bg-gradient-to-br from-arcaRed to-red-800 text-center overflow-hidden text-white">
         <div class="absolute inset-0 hero-bg"></div>
-        <div class="relative z-10 max-w-4xl mx-auto px-6">
+        <div class="relative z-10 max-w-4xl mx-auto px-6 text-center">
             <h1 class="text-5xl md:text-7xl font-black italic uppercase mb-8 leading-tight">Wujudkan <span class="text-arcaYellow">Mimpimu</span></h1>
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4 max-w-2xl mx-auto mt-10">
                 <div class="bg-white p-6 rounded-3xl shadow-xl text-slate-800 text-left border-l-8 border-arcaRed">
                     <p class="text-[9px] font-black text-slate-400 uppercase">Lokasi:</p>
-                    <p class="text-xs font-bold italic uppercase">Jl. Tamtama, Weleri, Kendal</p>
+                    <p class="text-xs font-bold italic uppercase leading-none">Jl. Tamtama, Weleri, Kendal</p>
                 </div>
                 <div class="bg-white p-6 rounded-3xl shadow-xl text-slate-800 text-left border-l-8 border-arcaYellow">
                     <p class="text-[9px] font-black text-slate-400 uppercase">Admin:</p>
@@ -105,10 +102,13 @@ if (isset($_POST['login'])) {
         <div class="max-w-7xl mx-auto">
             <h2 class="text-3xl font-black text-center text-slate-800 uppercase italic mb-12">Program Unggulan</h2>
             <div class="grid grid-cols-2 lg:grid-cols-3 gap-6">
-                <template x-for="(desc, title) in silabus">
+                <template x-for="(desc, title) in silabus" :key="title">
                     <button @click="openModal = title" class="bg-white p-10 rounded-[2.5rem] shadow-xl hover:shadow-2xl hover:-translate-y-2 transition-all border-2 border-slate-50 hover:border-arcaRed text-center group">
-                        <div class="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center text-arcaRed text-2xl mb-4 mx-auto group-hover:bg-arcaRed group-hover:text-white transition shadow-inner"><i class="fas fa-play"></i></div>
+                        <div class="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center text-arcaRed text-2xl mb-4 mx-auto group-hover:bg-arcaRed group-hover:text-white transition shadow-inner">
+                            <i class="fas fa-play"></i>
+                        </div>
                         <h4 class="text-sm font-black uppercase italic" x-text="'Kelas ' + title"></h4>
+                        <p class="text-[8px] font-bold text-slate-400 uppercase mt-2">Cek Silabus <i class="fas fa-chevron-right ml-1"></i></p>
                     </button>
                 </template>
             </div>
@@ -118,13 +118,13 @@ if (isset($_POST['login'])) {
     <template x-if="openModal">
         <div class="fixed inset-0 z-[100] flex items-center justify-center p-6 bg-black/60 backdrop-blur-sm" @click.self="openModal = null">
             <div class="bg-white w-full max-w-md rounded-[3rem] shadow-2xl overflow-hidden animate-bounce-short">
-                <div class="bg-arcaRed p-6 text-white flex justify-between border-b-4 border-arcaYellow">
-                    <h3 class="font-black italic uppercase text-xs" x-text="'Silabus ' + openModal"></h3>
-                    <button @click="openModal = null"><i class="fas fa-times"></i></button>
+                <div class="bg-arcaRed p-6 text-white flex justify-between items-center border-b-4 border-arcaYellow">
+                    <h3 class="font-black italic uppercase text-sm tracking-tighter" x-text="'Silabus ' + openModal"></h3>
+                    <button @click="openModal = null" class="w-8 h-8 flex items-center justify-center rounded-full hover:bg-white/20 transition"><i class="fas fa-times"></i></button>
                 </div>
-                <div class="p-8 text-slate-600 font-bold italic text-sm leading-relaxed" x-text="silabus[openModal]"></div>
+                <div class="p-8 text-slate-600 font-bold italic text-sm leading-relaxed text-center" x-text="silabus[openModal]"></div>
                 <div class="p-6 bg-white border-t text-center">
-                    <a href="https://wa.me/62895360796038" target="_blank" class="bg-arcaRed text-white px-8 py-3 rounded-full font-black uppercase text-[10px] shadow-lg italic inline-block">Daftar Sekarang</a>
+                    <a href="https://wa.me/62895360796038" target="_blank" class="bg-arcaRed text-white px-10 py-3 rounded-full font-black uppercase text-[10px] shadow-lg italic inline-block transition hover:scale-105 active:scale-95">Daftar Sekarang</a>
                 </div>
             </div>
         </div>
@@ -132,22 +132,22 @@ if (isset($_POST['login'])) {
 
     <?php if(!$is_login): ?>
     <section id="login-section" class="py-20 bg-slate-50">
-        <div class="max-w-md mx-auto px-6">
-            <div class="bg-white p-10 rounded-[3rem] shadow-2xl border-b-8 border-arcaYellow text-center">
-                <h2 class="text-2xl font-black italic mb-8 uppercase">Login Portal</h2>
-                <form method="POST" class="space-y-4">
+        <div class="max-w-md mx-auto px-6 text-center">
+            <div class="bg-white p-10 rounded-[3rem] shadow-2xl border-b-8 border-arcaYellow inline-block w-full">
+                <h2 class="text-2xl font-black italic mb-8 uppercase text-slate-800">Login Portal</h2>
+                <form method="POST" class="space-y-4 text-left">
                     <input type="text" name="username" placeholder="Username" class="w-full p-4 rounded-2xl bg-slate-50 border-2 font-bold italic outline-none focus:border-arcaRed transition shadow-inner" required>
                     <input type="password" name="password" placeholder="Password" class="w-full p-4 rounded-2xl bg-slate-50 border-2 font-bold outline-none focus:border-arcaRed transition shadow-inner" required>
                     <button type="submit" name="login" class="w-full bg-arcaRed text-white font-black py-4 rounded-2xl uppercase italic shadow-xl hover:bg-red-700 transition">Masuk Dashboard</button>
-                    <?php if($error): ?><p class="text-red-600 font-black italic text-[10px] uppercase mt-2"><?php echo $error; ?></p><?php endif; ?>
+                    <?php if($error): ?><p class="text-red-600 font-black italic text-[10px] uppercase mt-2 text-center"><?php echo $error; ?></p><?php endif; ?>
                 </form>
             </div>
         </div>
     </section>
     <?php endif; ?>
 
-    <footer class="bg-slate-900 text-white py-10 text-center border-t-8 border-arcaYellow">
-        <p class="text-[9px] font-black uppercase tracking-widest">&copy; 2026 Smart Arca Music School.</p>
+    <footer class="bg-slate-900 text-white py-12 text-center border-t-8 border-arcaYellow">
+        <p class="text-[9px] font-black uppercase tracking-widest text-slate-500 italic">&copy; 2026 Smart Arca Music School. Weleri - Kendal.</p>
     </footer>
 
     <script>
